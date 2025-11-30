@@ -1,0 +1,17 @@
+{
+    "configurations": [
+        {
+            "name": "C/C++: cl.exe 활성 파일 빌드 및 디버그",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}\\build\\bin\\ProjectF.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "integratedTerminal",
+            "preLaunchTask": "C/C++: cl.exe 활성 파일 빌드"
+        }
+    ],
+    "version": "2.0.0"
+}
