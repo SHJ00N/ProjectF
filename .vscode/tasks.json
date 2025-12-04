@@ -1,4 +1,5 @@
 {
+    "version": "2.0.0",
     "tasks": [
         {
             "type": "cppbuild",
@@ -8,13 +9,26 @@
                 "/Zi",
                 "/EHsc",
                 "/nologo",
+                "/utf-8",
+
+                "/I${workspaceFolder}\\include",
+
+                "${workspaceFolder}\\src\\*.cpp",
+                "${workspaceFolder}\\src\\*.c",
+
                 "/Fo${workspaceFolder}\\build\\obj\\",
                 "/Fd${workspaceFolder}\\build\\pdb\\ProjectF.pdb",
                 "/Fe${workspaceFolder}\\build\\bin\\ProjectF.exe",
-                "${workspaceFolder}\\src\\*.cpp"
+
+                "/link",
+                "/LIBPATH:${workspaceFolder}\\lib",
+
+                "glfw3dll.lib",
+                "opengl32.lib",
+                "assimp-vc143-mtd.lib"
             ],
             "options": {
-                "cwd": "${workspaceFolder}"
+                "cwd": "${workspaceFolder}\\build\\bin",
             },
             "problemMatcher": [
                 "$msCompile"
@@ -25,6 +39,5 @@
             },
             "detail": "디버거에서 생성된 작업입니다."
         }
-    ],
-    "version": "2.0.0"
+    ]
 }
