@@ -6,7 +6,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <shader.h>
+#include "shader.h"
 
 #include <string>
 #include <vector>
@@ -20,6 +20,11 @@ struct Vertex{
     glm::vec2 TexCoords;
     glm::vec3 Tangent;
     glm::vec3 Bitangent;
+
+    // bone indexes which will influence this vertex
+    int m_BoneIDs[MAX_BONE_INFLUENCE];
+    // weights from each bone
+    float m_Weights[MAX_BONE_INFLUENCE];
 };
 
 struct Texture{
@@ -37,6 +42,7 @@ public:
 
     Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures);
     void Draw(Shader &shader);
+    void Clear();
 
 private:
     unsigned int VBO, EBO;

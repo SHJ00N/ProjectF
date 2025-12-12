@@ -9,6 +9,7 @@
 #include "texture.h"
 #include "shader.h"
 #include "model.h"
+#include "animation.h"
 
 class ResourceManager
 {
@@ -17,6 +18,7 @@ public:
     static std::map<std::string, Shader>    Shaders;
     static std::map<std::string, Texture2D> Textures;
     static std::map<std::string, Model>    Models;
+    static std::map<std::string, Animation> Animations;
     // loads (and generates) a shader program from file loading vertex, fragment (and geometry) shader's source code. If gShaderFile is not nullptr, it also loads a geometry shader
     static Shader    LoadShader(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile, std::string name);
     // retrieves a stored sader
@@ -29,6 +31,10 @@ public:
     static Model LoadModel(const char *file, bool gamma, std::string name);
     // retrieves a stored model
     static Model& GetModel(std::string name);
+    // loads (and generates) an animation from file
+    static Animation LoadAnimation(const char *file, Model &model, std::string name);
+    // retrieves a stored animation
+    static Animation& GetAnimation(std::string name);
     // properly de-allocates all loaded resources
     static void      Clear();
 private:
@@ -40,6 +46,8 @@ private:
     static Texture2D loadTextureFromFile(const char *file, bool alpha);
     // loads a single model from file
     static Model loadModelFromFile(const char *file, bool gamma);
+    // loads a single animation from file
+    static Animation loadAnimationFromFile(const char *file, Model &model);
 };
 
 #endif

@@ -10,6 +10,7 @@
 std::map<std::string, Texture2D>    ResourceManager::Textures;
 std::map<std::string, Shader>       ResourceManager::Shaders;
 std::map<std::string, Model>        ResourceManager::Models;
+std::map<std::string, Animation>    ResourceManager::Animations;
 
 Shader ResourceManager::LoadShader(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile, std::string name)
 {
@@ -44,6 +45,17 @@ Model& ResourceManager::GetModel(std::string name)
     return Models[name];
 }
 
+Animation ResourceManager::LoadAnimation(const char *file, Model &model, std::string name)
+{
+    Animations[name] = loadAnimationFromFile(file, model);
+    return Animations[name];
+}
+
+Animation& ResourceManager::GetAnimation(std::string name)
+{
+    return Animations[name];
+}
+
 void ResourceManager::Clear()
 {
     // (properly) delete all shaders	
@@ -52,6 +64,15 @@ void ResourceManager::Clear()
     // (properly) delete all textures
     for (auto iter : Textures)
         glDeleteTextures(1, &iter.second.ID);
+    // delete all models
+    for (auto iter : Models)
+        iter.second.Clear();
+    // delete all animations
+    Animations.clear();
+
+    Shaders.clear();
+    Textures.clear();
+    Models.clear();
 }
 
 Shader ResourceManager::loadShaderFromFile(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile)
@@ -123,4 +144,11 @@ Model ResourceManager::loadModelFromFile(const char *file, bool gamma)
     Model model;
     model.LoadModel(file, gamma);
     return model;
+}
+
+Animation ResourceManager::loadAnimationFromFile(const char *file, Model &model)
+{
+    // create animation object
+    Animation animation(file, model);
+    return animation;
 }

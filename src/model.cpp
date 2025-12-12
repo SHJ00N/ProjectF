@@ -4,11 +4,20 @@ void Model::Draw(Shader &shader){
     for(unsigned int i = 0; i < meshes.size(); i++) meshes[i].Draw(shader);
 }
 
+void Model::Clear()
+{
+    for(auto& mesh : meshes) mesh.Clear();
+    for(auto& texture : texturesLoaded) glDeleteTextures(1, &texture.id);
+
+    meshes.clear();
+    texturesLoaded.clear();
+}
+
 void Model::LoadModel(string const &path, bool gamma){
     this->gammaCorrection = gamma;
 
     Assimp::Importer importer;
-    const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
+    const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_JoinIdenticalVertices);
     if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode){
         cout << "Error::ASSIMP:: " << importer.GetErrorString() << endl;
         return;
@@ -30,6 +39,21 @@ void Model::processNode(aiNode *node, const aiScene *scene){
     }
 }
 
+std::map<std::string, BoneInfo>& Model::GetBoneInfoMap(){
+    return m_BoneInfoMap;
+}
+
+int& Model::GetBoneCount(){
+    return m_BoneCounter;
+}
+
+void Model::SetVertexBoneDataToDefault(Vertex &vertex){
+    for(int i = 0; i < MAX_BONE_INFLUENCE; i++){
+        vertex.m_BoneIDs[i] = -1;
+        vertex.m_Weights[i] = 0.0f;
+    }
+}
+
 Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene){
     vector<Vertex> vertices;
     vector<unsigned int> indices;
@@ -37,34 +61,27 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene){
 
     for(unsigned int i = 0; i < mesh->mNumVertices; i++){
         Vertex vertex;
-        glm::vec3 vector;
-        vector.x = mesh->mVertices[i].x;
-        vector.y = mesh->mVertices[i].y;
-        vector.z = mesh->mVertices[i].z;
-        vertex.Position = vector;
+        
+        SetVertexBoneDataToDefault(vertex);
 
-        if(mesh->HasNormals()){
-            vector.x = mesh->mNormals[i].x;
-            vector.y = mesh->mNormals[i].y;
-            vector.z = mesh->mNormals[i].z;
-            vertex.Normal = vector;
-        }
+        vertex.Position = AssimpGLMHelpers::GetGLMVec(mesh->mVertices[i]);
+        if(mesh->HasNormals()) vertex.Normal = AssimpGLMHelpers::GetGLMVec(mesh->mNormals[i]);
 
         if(mesh->mTextureCoords[0]){
-            glm::vec2 vec;
+            glm::vec3 vec;
             vec.x = mesh->mTextureCoords[0][i].x;
             vec.y = mesh->mTextureCoords[0][i].y;
-            vertex.TexCoords = vec;
+            vertex.TexCoords = glm::vec2(vec.x, vec.y);
 
-            vector.x = mesh->mTangents[i].x;
-            vector.y = mesh->mTangents[i].y;
-            vector.z = mesh->mTangents[i].z;
-            vertex.Tangent = vector;
+            vec.x = mesh->mTangents[i].x;
+            vec.y = mesh->mTangents[i].y;
+            vec.z = mesh->mTangents[i].z;
+            vertex.Tangent = vec;
             
-            vector.x = mesh->mBitangents[i].x;
-            vector.y = mesh->mBitangents[i].y;
-            vector.z = mesh->mBitangents[i].z;
-            vertex.Bitangent = vector;
+            vec.x = mesh->mBitangents[i].x;
+            vec.y = mesh->mBitangents[i].y;
+            vec.z = mesh->mBitangents[i].z;
+            vertex.Bitangent = vec;
         } else {
             vertex.TexCoords = glm::vec2(0.0f);
         }
@@ -79,14 +96,59 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene){
 
     aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
 
-    vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+    std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
     textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-    vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
+    std::vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
     textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
-    vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
+    std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
     textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
-    
+    std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
+    textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
+
+    ExtractBoneWeightForVertices(vertices, mesh, scene);
+
     return Mesh(vertices, indices, textures);
+}
+
+void Model::SetVertexBoneData(Vertex &vertex, int boneID, float weight){
+    for(int i = 0; i < MAX_BONE_INFLUENCE; i++){
+        if(vertex.m_BoneIDs[i] < 0){
+            vertex.m_BoneIDs[i] = boneID;
+            vertex.m_Weights[i] = weight;
+            break;
+        }
+    }
+}
+
+void Model::ExtractBoneWeightForVertices(std::vector<Vertex> &vertices, aiMesh *mesh, const aiScene *scene){
+    auto& boneInfoMap = m_BoneInfoMap;
+    int &boneCount = m_BoneCounter;
+
+    for(int boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex){
+        int boneID = -1;
+        std::string boneName = mesh->mBones[boneIndex]->mName.C_Str();
+        if(boneInfoMap.find(boneName) == boneInfoMap.end()){
+            BoneInfo newBoneInfo;
+            newBoneInfo.id = boneCount;
+            newBoneInfo.offset = AssimpGLMHelpers::ConvertMatrixToGLMFormat(mesh->mBones[boneIndex]->mOffsetMatrix);
+            boneInfoMap[boneName] = newBoneInfo;
+            boneID = boneCount;
+            boneCount++;
+        } else {
+            boneID = boneInfoMap[boneName].id;
+        }
+
+        assert(boneID != -1);
+        auto weights = mesh->mBones[boneIndex]->mWeights;
+        int numWeights = mesh->mBones[boneIndex]->mNumWeights;
+
+        for(int weightIndex = 0; weightIndex < numWeights; ++weightIndex){
+            int vertexId = weights[weightIndex].mVertexId;
+            float weight = weights[weightIndex].mWeight;
+            assert(vertexId <= vertices.size());
+            SetVertexBoneData(vertices[vertexId], boneID, weight);
+        }
+    }
 }
 
 vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type, string typeName){

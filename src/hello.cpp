@@ -12,6 +12,9 @@
 #include <iostream>
 
 #include "resource_manager.h"
+#include "animator.h"
+#include "game_object.h"
+#include "skeletal_mesh_renderer.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -32,6 +35,9 @@ bool firstMouse = true;
 // timing
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
+
+// model renderer
+SkeletalMeshRenderer Renderer;
 
 int main()
 {
@@ -72,7 +78,7 @@ int main()
     }
 
     // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
-    stbi_set_flip_vertically_on_load(true);
+    //stbi_set_flip_vertically_on_load(true);
 
     // configure global opengl state
     // -----------------------------
@@ -80,17 +86,20 @@ int main()
 
     // build and compile shaders
     // -------------------------
-    ResourceManager::LoadShader("shaders/1.model_loading.vert", "shaders/1.model_loading.frag", nullptr, "modelLoading");
-    Shader &ourShader = ResourceManager::GetShader("modelLoading");
+    ResourceManager::LoadShader("shaders/sample.vert", "shaders/sample.frag", nullptr, "modelLoading");
     
     // load models
     // -----------
-    ResourceManager::LoadModel("resources/object/backpack/backpack.obj", true, "backpack");
+    ResourceManager::LoadModel("resources/object/Vampire A Lusth/Vampire A Lusth.dae", false, "backpack");
 
+    ResourceManager::LoadAnimation("resources/animation/Capoeira.dae", ResourceManager::GetModel("backpack"), "dance");
+    GameObject object(ResourceManager::GetModel("backpack"), glm::vec3(0.0f, -0.4f, 0.0f), glm::vec3(1.0f));
 
+    object.Animator3D.PlayAnimation(&ResourceManager::GetAnimation("dance"));
+    
     // draw in wireframe
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
+    //camera.movementSpeed = 20.0f;
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -110,21 +119,15 @@ int main()
         glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // don't forget to enable shader before setting uniforms
-        ourShader.Use();
-
         // view/projection transformations
-        glm::mat4 projection = glm::perspective(glm::radians(camera.fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(camera.fov), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 500.0f);
         glm::mat4 view = camera.GetViewMatrix();
-        ourShader.SetMatrix4("projection", projection);
-        ourShader.SetMatrix4("view", view);
+        ResourceManager::GetShader("modelLoading").SetMatrix4("projection", projection);
+        ResourceManager::GetShader("modelLoading").SetMatrix4("view", view);
+
 
         // render the loaded model
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
-        ourShader.SetMatrix4("model", model);
-        ResourceManager::GetModel("backpack").Draw(ourShader);
+        Renderer.Draw(ResourceManager::GetShader("modelLoading"), object, deltaTime);
 
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -135,6 +138,7 @@ int main()
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
+    ResourceManager::Clear();
     glfwTerminate();
     return 0;
 }

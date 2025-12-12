@@ -1,18 +1,10 @@
-#ifndef MODEL_RENDERER_H
-#define MODEL_RENDERER_H
+#pragma once
 
-#include <glad/glad.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
-#include "model.h"
 #include "shader.h"
+#include "game_object.h"
 
 class ModelRenderer
 {
 public:
-    void DrawModel();
-
+    virtual void Draw(Shader &shader, GameObject &gameObject, float deltaTime) = 0;
 };
-
-#endif

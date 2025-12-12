@@ -8,6 +8,13 @@ Mesh::Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture
     SetUpMesh();
 }
 
+void Mesh::Clear()
+{
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
+}
+
 void Mesh::Draw(Shader &shader){
     unsigned int diffuseNr = 1;
     unsigned int specularNr = 1;
@@ -20,7 +27,7 @@ void Mesh::Draw(Shader &shader){
         if(name == "texture_diffuse") number = to_string(diffuseNr++);
         else if(name == "texture_specular") number = to_string(specularNr++);
         else if(name == "texture_normal") number = to_string(normalNr++);
-
+        else if(name == "texture_height") number = to_string(heightNr++);
 
         shader.SetInteger(("material." + name + number).c_str(), i);
         glBindTexture(GL_TEXTURE_2D, textures[i].id);
@@ -55,6 +62,12 @@ void Mesh::SetUpMesh(){
     glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Tangent));
     glEnableVertexAttribArray(4);
     glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Bitangent));
+    // ids
+    glEnableVertexAttribArray(5);
+    glVertexAttribIPointer(5, 4, GL_INT, sizeof(Vertex), (void*)offsetof(Vertex, m_BoneIDs));
+    // weights
+    glEnableVertexAttribArray(6);
+    glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, m_Weights));
 
     glBindVertexArray(0);
 }

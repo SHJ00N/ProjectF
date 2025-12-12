@@ -12,8 +12,10 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#include <shader.h>
-#include <mesh.h>
+#include "shader.h"
+#include "mesh.h"
+#include "animdata.h"
+#include "assimp_glm_helpers.h"
 
 #include <string>
 #include <fstream>
@@ -36,8 +38,19 @@ public:
     Model(){ };
     void Draw(Shader &shader);
     void LoadModel(string const &path, bool gamma = false);
+    void Clear();
+
+    std::map<std::string, BoneInfo>& GetBoneInfoMap();
+    int& GetBoneCount();
 
 private:
+    std::map<string, BoneInfo> m_BoneInfoMap;
+    int m_BoneCounter = 0;
+
+    void SetVertexBoneDataToDefault(Vertex& vertex);
+    void SetVertexBoneData(Vertex& vertex, int boneID, float weight);
+    void ExtractBoneWeightForVertices(std::vector<Vertex> &vertices, aiMesh *mesh, const aiScene *scene);
+
     void processNode(aiNode *node, const aiScene *scene);
     Mesh processMesh(aiMesh *mesh, const aiScene *scene);
     vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, string typeName);
