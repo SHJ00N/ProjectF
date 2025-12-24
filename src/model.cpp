@@ -25,6 +25,7 @@ void Model::LoadModel(string const &path, bool gamma){
 
     directory = path.substr(0, path.find_last_of('/'));
 
+    int count = 0;
     processNode(scene->mRootNode, scene);
 }
 
@@ -67,23 +68,15 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene){
         vertex.Position = AssimpGLMHelpers::GetGLMVec(mesh->mVertices[i]);
         if(mesh->HasNormals()) vertex.Normal = AssimpGLMHelpers::GetGLMVec(mesh->mNormals[i]);
 
-        if(mesh->mTextureCoords[0]){
-            glm::vec3 vec;
-            vec.x = mesh->mTextureCoords[0][i].x;
-            vec.y = mesh->mTextureCoords[0][i].y;
-            vertex.TexCoords = glm::vec2(vec.x, vec.y);
-
-            vec.x = mesh->mTangents[i].x;
-            vec.y = mesh->mTangents[i].y;
-            vec.z = mesh->mTangents[i].z;
-            vertex.Tangent = vec;
-            
-            vec.x = mesh->mBitangents[i].x;
-            vec.y = mesh->mBitangents[i].y;
-            vec.z = mesh->mBitangents[i].z;
-            vertex.Bitangent = vec;
+        if(mesh->HasTextureCoords(0)){
+            vertex.TexCoords = {mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y};
         } else {
             vertex.TexCoords = glm::vec2(0.0f);
+        }
+
+        if (mesh->HasTangentsAndBitangents()) {
+            vertex.Tangent   = AssimpGLMHelpers::GetGLMVec(mesh->mTangents[i]);
+            vertex.Bitangent = AssimpGLMHelpers::GetGLMVec(mesh->mBitangents[i]);
         }
         
         vertices.push_back(vertex);
@@ -105,7 +98,7 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene){
     std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
     textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
-    ExtractBoneWeightForVertices(vertices, mesh, scene);
+    if(mesh->HasBones()) ExtractBoneWeightForVertices(vertices, mesh, scene);
 
     return Mesh(vertices, indices, textures);
 }

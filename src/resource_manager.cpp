@@ -11,10 +11,11 @@ std::map<std::string, Texture2D>    ResourceManager::Textures;
 std::map<std::string, Shader>       ResourceManager::Shaders;
 std::map<std::string, Model>        ResourceManager::Models;
 std::map<std::string, Animation>    ResourceManager::Animations;
+std::map<std::string, Terrain>      ResourceManager::Terrains;
 
-Shader ResourceManager::LoadShader(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile, std::string name)
+Shader ResourceManager::LoadShader(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile, const char *tcShaderFile, const char *teShaderFile, std::string name)
 {
-    Shaders[name] = loadShaderFromFile(vShaderFile, fShaderFile, gShaderFile);
+    Shaders[name] = loadShaderFromFile(vShaderFile, fShaderFile, gShaderFile, tcShaderFile, teShaderFile);
     return Shaders[name];
 }
 
@@ -56,6 +57,17 @@ Animation& ResourceManager::GetAnimation(std::string name)
     return Animations[name];
 }
 
+Terrain ResourceManager::LoadTerrain(const char *diffuseFile, const char *heightFile, std::string name, float heightScale, float worldScale, unsigned int rez)
+{
+    Terrains[name] = loadTerrainFromFile(diffuseFile, heightFile, heightScale, worldScale, rez);
+    return Terrains[name];
+}
+
+Terrain& ResourceManager::GetTerrain(std::string name)
+{
+    return Terrains[name];
+}
+
 void ResourceManager::Clear()
 {
     // (properly) delete all shaders	
@@ -69,18 +81,25 @@ void ResourceManager::Clear()
         iter.second.Clear();
     // delete all animations
     Animations.clear();
+    // delete all terrains
+    for (auto iter : Terrains)
+        iter.second.Clear();
 
+    // clear maps
     Shaders.clear();
     Textures.clear();
     Models.clear();
+    Terrains.clear();
 }
 
-Shader ResourceManager::loadShaderFromFile(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile)
+Shader ResourceManager::loadShaderFromFile(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile, const char *tcShaderFile, const char *teShaderFile)
 {
     // 1. retrieve the vertex/fragment source code from filePath
     std::string vertexCode;
     std::string fragmentCode;
     std::string geometryCode;
+    std::string tessControlCode;
+    std::string tessEvalCode;
     try
     {
         // open files
@@ -105,6 +124,24 @@ Shader ResourceManager::loadShaderFromFile(const char *vShaderFile, const char *
             geometryShaderFile.close();
             geometryCode = gShaderStream.str();
         }
+        // tessellation control shader
+        if (tcShaderFile != nullptr)
+        {
+            std::ifstream tessControlShaderFile(tcShaderFile);
+            std::stringstream tcShaderStream;
+            tcShaderStream << tessControlShaderFile.rdbuf();
+            tessControlShaderFile.close();
+            tessControlCode = tcShaderStream.str();
+        }
+        // tessellation evaluation shader
+        if (teShaderFile != nullptr)
+        {
+            std::ifstream tessEvalShaderFile(teShaderFile);
+            std::stringstream teShaderStream;
+            teShaderStream << tessEvalShaderFile.rdbuf();
+            tessEvalShaderFile.close();
+            tessEvalCode = teShaderStream.str();
+        }
     }
     catch (std::exception e)
     {
@@ -113,9 +150,11 @@ Shader ResourceManager::loadShaderFromFile(const char *vShaderFile, const char *
     const char *vShaderCode = vertexCode.c_str();
     const char *fShaderCode = fragmentCode.c_str();
     const char *gShaderCode = geometryCode.c_str();
+    const char *tcShaderCode = tessControlCode.c_str();
+    const char *teShaderCode = tessEvalCode.c_str();
     // 2. now create shader object from source code
     Shader shader;
-    shader.Compile(vShaderCode, fShaderCode, gShaderFile != nullptr ? gShaderCode : nullptr);
+    shader.Compile(vShaderCode, fShaderCode, gShaderFile != nullptr ? gShaderCode : nullptr, tcShaderFile != nullptr ? tcShaderCode : nullptr, teShaderFile != nullptr ? teShaderCode : nullptr);
     return shader;
 }
 
@@ -151,4 +190,11 @@ Animation ResourceManager::loadAnimationFromFile(const char *file, Model &model)
     // create animation object
     Animation animation(file, model);
     return animation;
+}
+
+Terrain ResourceManager::loadTerrainFromFile(const char *diffuseFile, const char *heightFile, float heightScale, float worldScale, unsigned int rez)
+{
+    // create terrain object
+    Terrain terrain(diffuseFile, heightFile, heightScale, worldScale, rez);
+    return terrain;
 }

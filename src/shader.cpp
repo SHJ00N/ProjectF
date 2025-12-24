@@ -8,9 +8,9 @@ Shader &Shader::Use()
     return *this;
 }
 
-void Shader::Compile(const char* vertexSource, const char* fragmentSource, const char* geometrySource)
+void Shader::Compile(const char* vertexSource, const char* fragmentSource, const char* geometrySource, const char *tessControlSource, const char *tessEvalSource)
 {
-    unsigned int sVertex, sFragment, gShader;
+    unsigned int sVertex, sFragment, gShader, tcShader, teShader;
     // vertex Shader
     sVertex = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(sVertex, 1, &vertexSource, NULL);
@@ -29,12 +29,32 @@ void Shader::Compile(const char* vertexSource, const char* fragmentSource, const
         glCompileShader(gShader);
         checkCompileErrors(gShader, "GEOMETRY");
     }
+    // tessellation control shader
+    if(tessControlSource != nullptr)
+    {
+        tcShader = glCreateShader(GL_TESS_CONTROL_SHADER);
+        glShaderSource(tcShader, 1, &tessControlSource, NULL);
+        glCompileShader(tcShader);
+        checkCompileErrors(tcShader, "TESS_CONTROL");
+    }
+    // tessellation control shader
+    if(tessEvalSource != nullptr)
+    {
+        teShader = glCreateShader(GL_TESS_EVALUATION_SHADER);
+        glShaderSource(teShader, 1, &tessEvalSource, NULL);
+        glCompileShader(teShader);
+        checkCompileErrors(teShader, "TESS_Evaluation");
+    }
     // shader program
     this->ID = glCreateProgram();
     glAttachShader(this->ID, sVertex);
     glAttachShader(this->ID, sFragment);
     if (geometrySource != nullptr)
         glAttachShader(this->ID, gShader);
+    if (tessControlSource != nullptr)
+        glAttachShader(this->ID, tcShader);
+    if (tessEvalSource != nullptr)
+        glAttachShader(this->ID, teShader);
     glLinkProgram(this->ID);
     checkCompileErrors(this->ID, "PROGRAM");
     // delete the shaders as they're linked into our program now and no longer necessary
@@ -42,6 +62,10 @@ void Shader::Compile(const char* vertexSource, const char* fragmentSource, const
     glDeleteShader(sFragment);
     if (geometrySource != nullptr)
         glDeleteShader(gShader);
+    if (tessControlSource != nullptr)
+        glDeleteShader(tcShader);
+    if (tessEvalSource != nullptr)
+        glDeleteShader(teShader);
 }
 
 void Shader::SetFloat(const char *name, float value, bool useShader)
