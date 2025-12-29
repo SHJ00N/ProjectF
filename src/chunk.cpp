@@ -8,15 +8,21 @@ Chunk::Chunk(int chunkX, int chunkZ, Terrain &terrain) : chunkX(chunkX), chunkZ(
 
 float Chunk::GetWorldHeight(float worldX, float worldZ)
 {
-    glm::vec4 localPos = glm::inverse(ChunkTransform.GetModelMatrix()) * glm::vec4(worldX, 0.0f, worldZ, 1.0f);
+    glm::vec4 terrainWorldPos = glm::inverse(ChunkTransform.GetModelMatrix()) * glm::vec4(worldX, 0.0f, worldZ, 1.0f);
 
-    return ChunkTerrain->GetLocalHeight(localPos.x, localPos.z);
+    return ChunkTerrain->GetLocalHeight(terrainWorldPos.x, terrainWorldPos.z);
+}
+
+glm::vec3 Chunk::GetWorldNormal(float worldX, float worldZ)
+{
+    glm::vec4 terrainWorldPos = glm::inverse(ChunkTransform.GetModelMatrix()) * glm::vec4(worldX, 0.0f, worldZ, 1.0f);
+
+    return ChunkTerrain->GetNormal(terrainWorldPos.x, terrainWorldPos.z);
 }
 
 void Chunk::Draw(Shader &shader)
 {
     // set model matrix
-    shader.Use();
     shader.SetMatrix4("model", ChunkTransform.GetModelMatrix());
 
     // draw terrain in this chunk

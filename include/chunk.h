@@ -19,6 +19,7 @@ public:
     Chunk(int chunkX, int chunkZ, Terrain &terrain);
 
     float GetWorldHeight(float worldX, float worldZ);
+    glm::vec3 GetWorldNormal(float worldX, float worldZ);
     void Draw(Shader &shader);
 private:
     // chunk grid coordinates

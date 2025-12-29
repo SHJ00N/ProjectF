@@ -20,8 +20,11 @@ void Animator::UpdateAnimation(float dt){
 }
 
 void Animator::PlayAnimation(Animation *pAnimation){
-    m_CurrentAnimation = pAnimation;
-    m_CurrentTime = 0.0f;
+    if(m_CurrentAnimation != pAnimation)
+    {
+        m_CurrentAnimation = pAnimation;
+        m_CurrentTime = 0.0f;
+    }
 }
 
 void Animator::CalculateBoneTransform(const AssimpNodeData *node, glm::mat4 parentTransform){

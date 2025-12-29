@@ -6,10 +6,11 @@ Camera::Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch){
     this->yaw = yaw;
     this->pitch = pitch;
     sensitivity = SENSITIVITY;
-    movementSpeed = MOVESPEED;
+    distance = NORMAL_DISTANCE;
+    targetDistance = NORMAL_DISTANCE;
     fov = FOV;
-
-    updateCameraVectors();
+    targetFov = FOV;
+    followYawOffset = 0.0f;
 }
 
 Camera::Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch){
@@ -18,51 +19,58 @@ Camera::Camera(float posX, float posY, float posZ, float upX, float upY, float u
     this->yaw = yaw;
     this->pitch = pitch;
     sensitivity = SENSITIVITY;
-    movementSpeed = MOVESPEED;
+    distance = NORMAL_DISTANCE;
+    targetDistance = NORMAL_DISTANCE;
     fov = FOV;
+    targetFov = FOV;
+    followYawOffset = 0.0f;
+}
 
-    updateCameraVectors();
+void Camera::Update(glm::vec3 &targetPos, float dt){
+    glm::vec3 pivot = targetPos + glm::vec3(0.0f, 1.5f, 0.0f);
+
+    float finalYaw = yaw + followYawOffset;
+
+    glm::vec3 direction;
+    direction.x = cos(glm::radians(pitch)) * sin(glm::radians(finalYaw));
+    direction.y = sin(glm::radians(pitch));
+    direction.z = cos(glm::radians(pitch)) * cos(glm::radians(finalYaw));
+    direction = glm::normalize(direction);
+
+    // Update camera position to target position minus offset
+    distance = glm::mix(distance, targetDistance, dt * 6.0f);
+    cameraPos = pivot - direction * distance;
+
+    cameraFront = glm::normalize(pivot - cameraPos);
+    cameraRight = glm::normalize(glm::cross(cameraFront, worldUp));
+    cameraUp    = glm::normalize(glm::cross(cameraRight, cameraFront)); 
+
+    // zoom when the pitch angle is low
+    if(pitch > 10.0f)
+    {
+        fov = glm::mix(fov, 25.0f, dt * 6.0f);
+    } 
+    else 
+    {
+        fov = glm::mix(fov, targetFov, dt * 6.0f);
+    }
 }
 
 glm::mat4 Camera::GetViewMatrix(){
-    return glm::lookAt(cameraPos, cameraPos + cameraFront, worldUp);
-}
-
-void Camera::ProcessKeyboard(Camera_Movement direction, float deltaTime){
-    float velocity = movementSpeed * deltaTime;
-
-    glm::vec3 frontXZ = glm::normalize(glm::vec3(cameraFront.x, 0.0f, cameraFront.z));
-    glm::vec3 rightXZ = glm::normalize(glm::cross(frontXZ, worldUp));
-
-    if(direction == FORWARD) cameraPos += frontXZ * velocity;
-    if(direction == BACKWARD) cameraPos -= frontXZ * velocity;
-    if(direction == RIGHT) cameraPos += rightXZ * velocity;
-    if(direction == LEFT) cameraPos -= rightXZ * velocity;
+    return glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
 }
 
 void Camera::ProcessMouseMovement(float xoffset, float yoffset){
-    yaw += xoffset * sensitivity;
+    followYawOffset -= xoffset * sensitivity;
     pitch += yoffset * sensitivity;
 
-    if(pitch > 89.0f) pitch = 89.0f;
-    if(pitch < -89.0f) pitch = -89.0f;
-
-    updateCameraVectors();
+    if(pitch > 25.0f) pitch = 25.0f;
+    if(pitch < -45.0f) pitch = -45.0f;
 }
 
 void Camera::ProcessMouseScroll(float yoffset){
-    fov -= yoffset;
-    if(fov < 1.0f) fov = 1.0f;
-    if(fov > 45.0f) fov = 45.0f;
-}
+    targetFov -= yoffset;
 
-void Camera::updateCameraVectors(){
-    glm::vec3 direction;
-    direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-    direction.y = sin(glm::radians(pitch));
-    direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-    cameraFront = glm::normalize(direction);
-
-    cameraRight = glm::normalize(glm::cross(cameraFront, worldUp));
-    cameraUp = glm::normalize(glm::cross(cameraRight, cameraFront));
+    if(targetFov < 25.0f) targetFov = 25.0f;
+    if(targetFov > 45.0f) targetFov = 45.0f;
 }

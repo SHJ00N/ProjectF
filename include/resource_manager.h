@@ -38,7 +38,7 @@ public:
     // retrieves a stored animation
     static Animation& GetAnimation(std::string name);
     // loads (and generates) terrain from file
-    static Terrain LoadTerrain(const char *diffuseFile, const char *heightFile, std::string name, float heightScale = 1.0f, float worldScale = 1.0f, unsigned int rez = 20);
+    static Terrain LoadTerrain(const char *diffuseFile, const char *heightFile, const char *normalFile, std::string name, float heightScale = 1.0f, float worldScale = 1.0f, unsigned int rez = 20);
     // retrieves a stored terrain
     static Terrain& GetTerrain(std::string name);
     // properly de-allocates all loaded resources
@@ -55,7 +55,7 @@ private:
     // loads a single animation from file
     static Animation loadAnimationFromFile(const char *file, Model &model);
     // loads a single terrain from file
-    static Terrain loadTerrainFromFile(const char *diffuseFile, const char *heightFile, float heightScale, float worldScale, unsigned int rez);
+    static Terrain loadTerrainFromFile(const char *diffuseFile, const char *heightFile, const char *normalFile, float heightScale, float worldScale, unsigned int rez);
 };
 
 #endif

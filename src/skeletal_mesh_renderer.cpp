@@ -3,10 +3,7 @@
 void SkeletalMeshRenderer::Draw(Shader &shader, GameObject &gameObject, float deltaTime)
 {
     // create transformation matrix
-    glm::mat4 modelMatrix = glm::mat4(1.0f);
-    modelMatrix = glm::translate(modelMatrix, gameObject.Position);
-    modelMatrix = glm::rotate(modelMatrix, glm::radians(gameObject.RotationAngle), gameObject.RotationAxis);
-    modelMatrix = glm::scale(modelMatrix, gameObject.Size);
+    glm::mat4 modelMatrix = gameObject.ObjectTransform.GetModelMatrix();
 
     // set the model matrix uniform
     shader.Use();

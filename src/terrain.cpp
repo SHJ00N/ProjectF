@@ -4,11 +4,12 @@ Terrain::Terrain() : HeightScale(64.0f), WorldScale(1.0f), Rez(20)
 {
 }
 
-Terrain::Terrain(const char *diffuseMapFile, const char *heightMapFile, float heightScale, float worldScale, unsigned int rez) : HeightScale(heightScale), WorldScale(worldScale), Rez(rez)
+Terrain::Terrain(const char *diffuseMapFile, const char *heightMapFile, const char *normalMapFile, float heightScale, float worldScale, unsigned int rez) : HeightScale(heightScale), WorldScale(worldScale), Rez(rez)
 {
     // load texture
-    DiffuseMap = textureFromFile(diffuseMapFile);
-    HeightMap = textureFromFile(heightMapFile, false, true);
+    DiffuseMap = textureFromFile(diffuseMapFile, "DIFFUSE");
+    HeightMap = textureFromFile(heightMapFile, "HEIGHT");
+    NormalMap = textureFromFile(normalMapFile, "NORMAL");
 
     // generate vertex
     for(unsigned int i = 0; i < rez; i++)
@@ -56,23 +57,32 @@ void Terrain::Clear()
     glDeleteBuffers(1, &VBO);
 }
 
-float Terrain::GetLocalHeight(float localX, float localZ)
+float Terrain::GetLocalHeight(float worldX, float worldZ)
 {
-    localX /= WorldScale;
-    localZ /= WorldScale;
-    
-    float halfW = (heightMapWidth  - 1) * 0.5f;
-    float halfH = (heightMapHeight - 1) * 0.5f;
+    glm::vec2 localPos = transformLocalCoord(worldX, worldZ);
 
-    float tx = localX + halfW;
-    float tz = localZ + halfH;
+    return bilinearInterpolate(localPos.x, localPos.y);
+}
 
-    return bilinearInterpolate(tx, tz);
+glm::vec3 Terrain::GetNormal(float worldX, float worldZ)
+{
+    glm::vec2 localPos = transformLocalCoord(worldX, worldZ);
+
+    float hL = bilinearInterpolate(localPos.x - 1.0f, localPos.y);
+    float hR = bilinearInterpolate(localPos.x + 1.0f, localPos.y);
+    float hD = bilinearInterpolate(localPos.x, localPos.y - 1.0f);
+    float hU = bilinearInterpolate(localPos.x, localPos.y + 1.0f);
+
+    glm::vec3 normal;
+    normal.x = hL - hR;
+    normal.y = 2.0f;
+    normal.z = hD - hU;
+
+    return glm::normalize(normal);
 }
 
 void Terrain::Draw(Shader &shader)
 {
-    shader.Use();
     shader.SetInteger("heightMap", 0);
     shader.SetInteger("diffuseMap", 1);
     shader.SetFloat("heightScale", HeightScale);
@@ -84,6 +94,8 @@ void Terrain::Draw(Shader &shader)
 
     glBindVertexArray(VAO);
     glDrawArrays(GL_PATCHES, 0, NUM_PATCH_PTS * Rez * Rez);
+
+    glBindVertexArray(0);
 }
 
 void Terrain::setUpTerrain()
@@ -107,13 +119,13 @@ void Terrain::setUpTerrain()
     glBindVertexArray(0);
 }
 
-unsigned int Terrain::textureFromFile(const char *path, bool gamma, bool isHeight){
+unsigned int Terrain::textureFromFile(const char *path, std::string type, bool gamma){
     unsigned int textureID;
     glGenTextures(1, &textureID);
 
     int width, height, nrComponents;
     unsigned char *data = nullptr;
-    if(isHeight)
+    if(type == "HEIGHT")
         data = stbi_load(path, &heightMapWidth, &heightMapHeight, &nrComponents, 1);
     else data = stbi_load(path, &width, &height, &nrComponents, 0);
 
@@ -134,7 +146,7 @@ unsigned int Terrain::textureFromFile(const char *path, bool gamma, bool isHeigh
 
         glBindTexture(GL_TEXTURE_2D, textureID);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, isHeight ? heightMapWidth : width, isHeight ? heightMapHeight : height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, type == "HEIGHT" ? heightMapWidth : width, type == "HEIGHT" ? heightMapHeight : height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -142,8 +154,11 @@ unsigned int Terrain::textureFromFile(const char *path, bool gamma, bool isHeigh
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-        if(isHeight)
+        if(type == "HEIGHT")
             heightData.assign(data, data + heightMapWidth * heightMapHeight);
+        if(type == "NORMAL")
+            normalData.assign(data, data + width * height);
+        
         stbi_image_free(data);
     } else {
         std::cout << "Texture failed to load at path: " << path << std::endl;
@@ -183,4 +198,18 @@ float Terrain::getHeightFromHeightMap(int x, int z)
     float height = heightData[index] / 255.0f;
 
     return height * HeightScale;
+}
+
+glm::vec2 Terrain::transformLocalCoord(float x, float z)
+{
+    x /= WorldScale;
+    z /= WorldScale;
+    
+    float halfW = (heightMapWidth  - 1) * 0.5f;
+    float halfH = (heightMapHeight - 1) * 0.5f;
+
+    float tx = x + halfW;
+    float tz = z + halfH;
+
+    return {tx, tz};
 }

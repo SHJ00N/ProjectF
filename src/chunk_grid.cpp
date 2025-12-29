@@ -28,6 +28,7 @@ Chunk* ChunkGrid::GetChunk(float worldX, float worldZ)
 
 void ChunkGrid::Draw(Shader &shader)
 {
+    shader.Use();
     for (auto &chunkPtr : Grid)
     {
         if (chunkPtr)

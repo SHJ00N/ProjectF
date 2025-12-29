@@ -34,7 +34,7 @@ void main()
         totalPosition += localPosition * weights[i];
         vec3 localNormal = mat3(finalBonesMatrices[boneIds[i]]) * norm;
    }
-	
+
     mat4 viewModel = view * model;
     gl_Position =  projection * viewModel * totalPosition;
 	TexCoords = tex;
