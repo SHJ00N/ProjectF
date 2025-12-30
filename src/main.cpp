@@ -15,12 +15,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 const unsigned int SCR_WIDTH = 1440;
 const unsigned int SCR_HEIGHT = 1080;
 
-// camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+// mouse input variables
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
-float smoothSpeed = 10.0f; // 값 클수록 즉각 반응
 
 // timing
 float deltaTime = 0.0f;
@@ -117,14 +115,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     // when a user presses the escape key, we set the WindowShouldClose property to true, closing the application
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-    if (key >= 0 && key < 1024)
+    if (game.GetCurrentScene() && key >= 0 && key < 1024)
     {
         if (action == GLFW_PRESS)
-            game.Keys[key] = true;
+            game.GetCurrentScene()->Keys[key] = true;
         else if (action == GLFW_RELEASE)
         {
-            game.Keys[key] = false;
-            game.KeysProcessed[key] = false;
+            game.GetCurrentScene()->Keys[key] = false;
+            game.GetCurrentScene()->KeysProcessed[key] = false;
         }
     }
 }
@@ -156,11 +154,15 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
     lastX = xpos;
     lastY = ypos;
 
-    game.DefaultCamera.ProcessMouseMovement(xoffset, yoffset);
+    const auto& scene = game.GetCurrentScene();
+    if(scene != nullptr && scene->GetCamera() != nullptr)
+        scene->GetCamera()->ProcessMouseMovement(xoffset, yoffset);
 }
 
 // glfw: whenever the mouse scroll wheel scrolls, this callback is called
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    game.DefaultCamera.ProcessMouseScroll(static_cast<float>(yoffset));
+    const auto& scene = game.GetCurrentScene();
+    if(scene != nullptr && scene->GetCamera() != nullptr)
+        scene->GetCamera()->ProcessMouseScroll(static_cast<float>(yoffset));
 }

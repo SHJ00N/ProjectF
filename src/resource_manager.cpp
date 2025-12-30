@@ -15,7 +15,8 @@ std::map<std::string, Terrain>      ResourceManager::Terrains;
 
 Shader ResourceManager::LoadShader(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile, const char *tcShaderFile, const char *teShaderFile, std::string name)
 {
-    Shaders[name] = loadShaderFromFile(vShaderFile, fShaderFile, gShaderFile, tcShaderFile, teShaderFile);
+    if(Shaders.find(name) == Shaders.end())
+        Shaders[name] = loadShaderFromFile(vShaderFile, fShaderFile, gShaderFile, tcShaderFile, teShaderFile);
     return Shaders[name];
 }
 
@@ -26,7 +27,8 @@ Shader& ResourceManager::GetShader(std::string name)
 
 Texture2D ResourceManager::LoadTexture(const char *file, bool alpha, std::string name)
 {
-    Textures[name] = loadTextureFromFile(file, alpha);
+    if(Textures.find(name) == Textures.end())
+        Textures[name] = loadTextureFromFile(file, alpha);
     return Textures[name];
 }
 
@@ -37,7 +39,8 @@ Texture2D& ResourceManager::GetTexture(std::string name)
 
 Model ResourceManager::LoadModel(const char *file, bool gamma, std::string name)
 {
-    Models[name] = loadModelFromFile(file, gamma);
+    if(Models.find(name) == Models.end())
+        Models[name] = loadModelFromFile(file, gamma);
     return Models[name];
 }
 
@@ -48,7 +51,8 @@ Model& ResourceManager::GetModel(std::string name)
 
 Animation ResourceManager::LoadAnimation(const char *file, Model &model, std::string name)
 {
-    Animations[name] = loadAnimationFromFile(file, model);
+    if(Animations.find(name) == Animations.end())
+        Animations[name] = loadAnimationFromFile(file, model);
     return Animations[name];
 }
 
@@ -59,7 +63,8 @@ Animation& ResourceManager::GetAnimation(std::string name)
 
 Terrain ResourceManager::LoadTerrain(const char *diffuseFile, const char *heightFile, const char *normalFile, std::string name, float heightScale, float worldScale, unsigned int rez)
 {
-    Terrains[name] = loadTerrainFromFile(diffuseFile, heightFile, normalFile, heightScale, worldScale, rez);
+    if(Terrains.find(name) == Terrains.end())
+        Terrains[name] = loadTerrainFromFile(diffuseFile, heightFile, normalFile, heightScale, worldScale, rez);
     return Terrains[name];
 }
 

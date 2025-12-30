@@ -66,7 +66,7 @@ void Player::Move(Camera_Movement direction, Camera &camera, Chunk *chunk, float
 
     // move
     ObjectTransform.position += projectedMove * velocity;
-    UpdateHeight(chunk->GetWorldHeight(ObjectTransform.position.x, ObjectTransform.position.z), dt);
+    if(chunk) UpdateHeight(chunk->GetWorldHeight(ObjectTransform.position.x, ObjectTransform.position.z), dt);
 }
 
 float NormalizeAngle(float angle)
