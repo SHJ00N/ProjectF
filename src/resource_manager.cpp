@@ -61,10 +61,10 @@ Animation& ResourceManager::GetAnimation(std::string name)
     return Animations[name];
 }
 
-Terrain ResourceManager::LoadTerrain(const char *diffuseFile, const char *heightFile, const char *normalFile, std::string name, float heightScale, float worldScale, unsigned int rez)
+Terrain ResourceManager::LoadTerrain(const char *diffuseFile, const char *heightFile, const char *normalFile, const char *roughFile, std::string name, float heightScale, float worldScale, unsigned int rez)
 {
     if(Terrains.find(name) == Terrains.end())
-        Terrains[name] = loadTerrainFromFile(diffuseFile, heightFile, normalFile, heightScale, worldScale, rez);
+        Terrains[name] = loadTerrainFromFile(diffuseFile, heightFile, normalFile, roughFile, heightScale, worldScale, rez);
     return Terrains[name];
 }
 
@@ -197,9 +197,9 @@ Animation ResourceManager::loadAnimationFromFile(const char *file, Model &model)
     return animation;
 }
 
-Terrain ResourceManager::loadTerrainFromFile(const char *diffuseFile, const char *heightFile, const char *normalFile, float heightScale, float worldScale, unsigned int rez)
+Terrain ResourceManager::loadTerrainFromFile(const char *diffuseFile, const char *heightFile, const char *normalFile, const char *roughFile, float heightScale, float worldScale, unsigned int rez)
 {
     // create terrain object
-    Terrain terrain(diffuseFile, heightFile, normalFile, heightScale, worldScale, rez);
+    Terrain terrain(diffuseFile, heightFile, normalFile, roughFile, heightScale, worldScale, rez);
     return terrain;
 }

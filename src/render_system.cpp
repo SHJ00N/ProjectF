@@ -4,6 +4,8 @@
 #include "direction_light.h"
 #include "resource_manager.h"
 
+#include <iostream>
+
 #pragma region lifecycle
 RenderSystem::RenderSystem(unsigned int width, unsigned int height) : m_width(width), m_height(height) 
 {
@@ -109,18 +111,17 @@ void RenderSystem::updateUBO(Scene* scene)
     const auto& lights = scene->GetLights();
     for(const auto& light : lights)
     {
-        // set base lighting variables
-        LightUBO lightingData;
-        lightingData.ambient = light->Ambient;
-        lightingData.diffuse = light->Diffuse;
-        lightingData.specular = light->Specular;
-        // set type variables
+        // set light variables
         if(light->GetLightType() == LightType::Direction && m_dirLightUBO != 0)
         {
             DirLightBlockUBO data;
-            data.dirLight.light = lightingData;
-            // type variables
-            data.dirLight.direction = static_cast<DirLight*>(light)->Direction;
+            // lighting variables
+            data.light.colorIntensity.x = light->Color.x;
+            data.light.colorIntensity.y = light->Color.y;
+            data.light.colorIntensity.z = light->Color.z;
+            data.light.colorIntensity.w = light->Intensity;
+            data.light.direction = static_cast<DirLight*>(light)->Direction;
+            // bool variable
             data.hasDirLight = 1;
 
             // configure uniform buffer data

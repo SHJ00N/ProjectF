@@ -32,7 +32,7 @@ void GamePlayScene::Init()
 {
     // load shaders
     ResourceManager::LoadShader("shaders/model_shader/boneMesh.vert", "shaders/model_shader/mesh.frag", nullptr, nullptr, nullptr, "boneModel");
-    ResourceManager::LoadShader("shaders/gpuheight.vert", "shaders/gpuheight.frag", nullptr, "shaders/gpuheight.tcs", "shaders/gpuheight.tes", "terrainShader");
+    ResourceManager::LoadShader("shaders/terrain_shader/terrain.vert", "shaders/terrain_shader/terrain.frag", nullptr, "shaders/terrain_shader/terrain.tcs", "shaders/terrain_shader/terrain.tes", "terrainShader");
     ResourceManager::LoadShader("shaders/PBR/background.vert", "shaders/PBR/background.frag", nullptr, nullptr, nullptr, "background");
     // configure shaders
     ResourceManager::GetShader("background").Use();
@@ -44,13 +44,13 @@ void GamePlayScene::Init()
     ResourceManager::LoadAnimation("resources/animation/knight2/Anim_DKM_Idle.fbx", ResourceManager::GetModel("knight"), "knight_idle");
     ResourceManager::LoadAnimation("resources/animation/knight2/Anim_DKM_Run_Fwd.fbx", ResourceManager::GetModel("knight"), "knight_run");
     // load terrains
-    ResourceManager::LoadTerrain("resources/texture/Diffuse_16BIT_PNG.png", "resources/texture/Heightmap_16BIT_PNG.png", "resources/texture/CombinedNormal_8BIT_PNG.png", "snowField", 1024.0f, 1.0f, 20);
+    ResourceManager::LoadTerrain("resources/texture/Diffuse_16BIT_PNG.png", "resources/texture/Heightmap_16BIT_PNG.png", "resources/texture/CombinedNormal_8BIT_PNG.png", "resources/texture/Roughness_16BIT_PNG.png", "snowField", 1024.0f, 2.0f, 20);
     // create IBL textures
     IBLtextures = IBLGenerator::GenerateIBLFromHDR("resources/texture/galaxy_hdr.png");
     // create main camera
     MainCamera = new Camera();
     // create lights
-    Lights.push_back(new DirLight(LightType::Direction, glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.2f), glm::vec3(10.0f), glm::vec3(1.0f)));
+    Lights.push_back(new DirLight(LightType::Direction, glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.7f, 0.8f, 1.0f), 1.0f));
     // create renderers
     skeletalRenderer = new SkeletalMeshRenderer();
     // create chunk grid and create chunks

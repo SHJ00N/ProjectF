@@ -10,27 +10,23 @@ struct CameraUBO
     float padding0 = 0.0f;     // glsl's uniform block pads vec3 to the size of vec4
 };
 
-struct LightUBO
-{
-    // common lighting variables
-    glm::vec3 ambient;
-    float padding0 = 0.0f;
-    glm::vec3 diffuse;
-    float padding1 = 0.0f;
-    glm::vec3 specular;
-    float padding2 = 0.0f;
-};
-
 struct DirLightUBO
 {
-    LightUBO light;
+    glm::vec4 colorIntensity; // light color and intensity
     glm::vec3 direction;
     float padding0 = 0.0f;
 };
 
 struct DirLightBlockUBO
 {
-    DirLightUBO dirLight;
+    DirLightUBO light;
     int hasDirLight = 0;
     glm::vec3 padding0;
+};
+
+struct PointLightUBO
+{
+    glm::vec4 colorIntensity; // light color and intensity
+    glm::vec3 position;
+    float padding0 = 0.0f;
 };

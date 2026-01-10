@@ -8,10 +8,11 @@ public:
     glm::vec3 Direction;
 
     // constructor(s)
-    DirLight(LightType lightType, glm::vec3 direction = glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3 ambient = glm::vec3(0.1f), glm::vec3 diffuse = glm::vec3(0.5f), glm::vec3 specular = glm::vec3(1.0f));
+    DirLight(LightType lightType, glm::vec3 direction = glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3 color = glm::vec3(1.0f, 1.0f, 1.0f), float intensity = 10.0f) 
+    : m_lightType(lightType), Direction(direction), Light(color, intensity) { }
 
     // getter
-    LightType GetLightType() override;
+    LightType GetLightType() override { return m_lightType; };
 
 private:
     LightType m_lightType;

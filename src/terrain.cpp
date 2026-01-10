@@ -4,12 +4,13 @@ Terrain::Terrain() : HeightScale(64.0f), WorldScale(1.0f), Rez(20)
 {
 }
 
-Terrain::Terrain(const char *diffuseMapFile, const char *heightMapFile, const char *normalMapFile, float heightScale, float worldScale, unsigned int rez) : HeightScale(heightScale), WorldScale(worldScale), Rez(rez)
+Terrain::Terrain(const char *diffuseMapFile, const char *heightMapFile, const char *normalMapFile, const char *roughMapFile, float heightScale, float worldScale, unsigned int rez) : HeightScale(heightScale), WorldScale(worldScale), Rez(rez)
 {
     // load texture
     DiffuseMap = textureFromFile(diffuseMapFile, "DIFFUSE");
     HeightMap = textureFromFile(heightMapFile, "HEIGHT");
     NormalMap = textureFromFile(normalMapFile, "NORMAL");
+    RoughnessMap = textureFromFile(roughMapFile, "ROUGHNESS");
 
     // generate vertex
     for(unsigned int i = 0; i < rez; i++)
@@ -51,6 +52,8 @@ void Terrain::Clear()
     // delete textures
     glDeleteTextures(1, &DiffuseMap);
     glDeleteTextures(1, &HeightMap);
+    glDeleteTextures(1, &NormalMap);
+    glDeleteTextures(1, &RoughnessMap);
 
     // delete buffers
     glDeleteVertexArrays(1, &VAO);
@@ -84,8 +87,9 @@ glm::vec3 Terrain::GetNormal(float worldX, float worldZ)
 void Terrain::Draw(Shader &shader)
 {
     shader.SetInteger("heightMap", 0);
-    shader.SetInteger("diffuseMap", 1);
-    shader.SetInteger("normalMap", 2);
+    shader.SetInteger("texture_diffuse", 1);
+    shader.SetInteger("texture_normal", 2);
+    shader.SetInteger("texture_roughness", 3);
     shader.SetFloat("heightScale", HeightScale);
 
     glActiveTexture(GL_TEXTURE0);
@@ -94,6 +98,8 @@ void Terrain::Draw(Shader &shader)
     glBindTexture(GL_TEXTURE_2D, DiffuseMap);
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, NormalMap);
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, RoughnessMap);
 
     glBindVertexArray(VAO);
     glDrawArrays(GL_PATCHES, 0, NUM_PATCH_PTS * Rez * Rez);
@@ -123,6 +129,7 @@ void Terrain::setUpTerrain()
 }
 
 unsigned int Terrain::textureFromFile(const char *path, std::string type, bool gamma){
+    stbi_set_flip_vertically_on_load(true);
     unsigned int textureID;
     glGenTextures(1, &textureID);
 
@@ -167,7 +174,7 @@ unsigned int Terrain::textureFromFile(const char *path, std::string type, bool g
         std::cout << "Texture failed to load at path: " << path << std::endl;
         stbi_image_free(data);
     }
-
+    stbi_set_flip_vertically_on_load(false);
     return textureID;
 }
 

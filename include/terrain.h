@@ -17,12 +17,12 @@ class Terrain
 {
 public:
     std::vector<float> Vertices;
-    unsigned int DiffuseMap, HeightMap, NormalMap;
+    unsigned int DiffuseMap, HeightMap, NormalMap, RoughnessMap;
     float HeightScale, WorldScale;
 
     // constructor
     Terrain();
-    Terrain(const char *diffuseMapFile, const char *heightMapFile, const char *normalMapFile, float heightScale = 64.0f, float worldScale = 1.0f, unsigned int rez = 20);
+    Terrain(const char *diffuseMapFile, const char *heightMapFile, const char *normalMapFile, const char *roughMapFile, float heightScale = 64.0f, float worldScale = 1.0f, unsigned int rez = 20);
     void Clear();
 
     float GetLocalHeight(float localX, float localZ);
