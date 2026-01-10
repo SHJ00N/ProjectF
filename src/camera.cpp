@@ -68,6 +68,11 @@ void Camera::ProcessMouseMovement(float xoffset, float yoffset){
     if(pitch < -45.0f) pitch = -45.0f;
 }
 
+glm::mat4 Camera::GetProjectionMatrix(float width, float height)
+{
+    return glm::perspective(glm::radians(fov), width / height, NEAR_PLANE, FAR_PLANE);
+}
+
 void Camera::ProcessMouseScroll(float yoffset){
     targetFov -= yoffset;
 

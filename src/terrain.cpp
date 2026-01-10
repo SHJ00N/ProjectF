@@ -85,12 +85,15 @@ void Terrain::Draw(Shader &shader)
 {
     shader.SetInteger("heightMap", 0);
     shader.SetInteger("diffuseMap", 1);
+    shader.SetInteger("normalMap", 2);
     shader.SetFloat("heightScale", HeightScale);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, HeightMap);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, DiffuseMap);
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, NormalMap);
 
     glBindVertexArray(VAO);
     glDrawArrays(GL_PATCHES, 0, NUM_PATCH_PTS * Rez * Rez);

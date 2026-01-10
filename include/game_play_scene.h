@@ -5,6 +5,9 @@
 
 #include "scene.h"
 #include "camera.h"
+#include "chunk_grid.h"
+#include "skeletal_mesh_renderer.h"
+#include "player.h"
 
 class GamePlayScene : public Scene
 {
@@ -20,4 +23,10 @@ public:
     void ProcessInput(float dt) override;
     void Render(float dt) override;
     void End() override;
+
+private:
+    // obj
+    SkeletalMeshRenderer *skeletalRenderer;
+    ChunkGrid *world;
+    Player *player;
 };

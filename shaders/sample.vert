@@ -1,4 +1,4 @@
-#version 330 core
+#version 460 core
 
 layout(location = 0) in vec3 pos;
 layout(location = 1) in vec3 norm;
@@ -8,8 +8,13 @@ layout(location = 4) in vec3 bitangent;
 layout(location = 5) in ivec4 boneIds; 
 layout(location = 6) in vec4 weights;
 
-uniform mat4 projection;
-uniform mat4 view;
+layout (std140, binding = 0) uniform CameraBlock
+{
+    mat4 projection;
+    mat4 view;
+    vec3 cameraPos;
+};
+
 uniform mat4 model;
 
 const int MAX_BONES = 100;

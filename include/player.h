@@ -8,7 +8,7 @@
 #include "camera.h"
 #include "chunk.h"
 
-const float PLAYER_SPEED = 50.0f;
+const float PLAYER_SPEED = 10.0f;
 
 class Player : public GameObject
 {

@@ -89,15 +89,31 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene){
 
     aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
 
+    // legacy model
     std::vector<Texture> diffuseMaps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
     textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
     std::vector<Texture> specularMaps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
     textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
-    std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
+    std::vector<Texture> normalMaps = loadMaterialTextures(material, aiTextureType_NORMALS, "texture_normal");
     textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
-    std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
+    std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_height");
     textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
-
+    // modern model
+    if(textures.size() == 0)
+    {
+        string name = string(material->GetName().C_Str());
+        Texture diffuseMap = loadModernMaterialTextures((name + "_Albedo.tga").c_str(), "texture_diffuse");
+        if(diffuseMap.id) textures.push_back(diffuseMap);
+        Texture normalMap = loadModernMaterialTextures((name + "_Normal.tga").c_str(), "texture_normal");
+        if(normalMap.id) textures.push_back(normalMap);
+        Texture roughMap = loadModernMaterialTextures((name + "_Roughness.tga").c_str(), "texture_roughness");
+        if(roughMap.id) textures.push_back(roughMap);
+        Texture metalMap = loadModernMaterialTextures((name + "_Metallic.tga").c_str(), "texture_metallic");
+        if(metalMap.id) textures.push_back(metalMap);
+        Texture aoMap = loadModernMaterialTextures((name + "_Ambient.tga").c_str(), "texture_ambient");
+        if(aoMap.id) textures.push_back(aoMap);
+    }
+    
     if(mesh->HasBones()) ExtractBoneWeightForVertices(vertices, mesh, scene);
 
     return Mesh(vertices, indices, textures);
@@ -144,12 +160,13 @@ void Model::ExtractBoneWeightForVertices(std::vector<Vertex> &vertices, aiMesh *
     }
 }
 
+// legacy model's texture load function
 vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type, string typeName){
     vector<Texture> textures;
     for(unsigned int i = 0; i < mat->GetTextureCount(type); i++){
         aiString str;
         mat->GetTexture(type, i, &str);
-        
+
         bool skip = false;
         for(unsigned int j = 0; j < texturesLoaded.size(); j++){
             if(strcmp(texturesLoaded[j].path.data(), str.C_Str()) == 0){
@@ -168,8 +185,31 @@ vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type,
             texturesLoaded.push_back(texture);
         }
     }
-
+    
     return textures;
+}
+
+// modern model's texture load function
+Texture Model::loadModernMaterialTextures(const char *path, string typeName)
+{
+    bool skip = false;
+    for(unsigned int i = 0; i < texturesLoaded.size(); i++)
+    {
+        if(strcmp(texturesLoaded[i].path.data(), path) == 0)
+        {
+            return texturesLoaded[i];
+        }
+    }
+
+    Texture texture;
+    if(!skip)
+    {
+        texture.id = TextureFromFile(path, this->directory, typeName == "texture_diffuse" ? this->gammaCorrection : false);
+        texture.type = typeName;
+        texture.path = path;
+        texturesLoaded.push_back(texture);
+    }
+    return texture;
 }
 
 unsigned int TextureFromFile(const char *path, const string &directory, bool gamma = false){
@@ -207,8 +247,9 @@ unsigned int TextureFromFile(const char *path, const string &directory, bool gam
 
         stbi_image_free(data);
     } else {
-        cout << "Texture failed to load at path: " << path << endl;
+        //cout << "Texture failed to load at path: " << path << endl;
         stbi_image_free(data);
+        return 0;
     }
 
     return textureID;

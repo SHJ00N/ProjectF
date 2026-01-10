@@ -1,26 +1,36 @@
-#include <iostream>
-
 #include "game.h"
 #include "resource_manager.h"
 #include "game_play_scene.h"
+#include "render_system.h"
 
+RenderSystem *renderSystem;
+
+#pragma region lifecycle
 Game::Game(unsigned int width, unsigned int height) : Width(width), Height(height)
 {
 }
 
 Game::~Game()
 {
-
+    delete renderSystem;
 }
 
+#pragma endregion
+
+#pragma region loop
 void Game::Init()
 {
+    renderSystem = new RenderSystem(Width, Height);
+    renderSystem->Init();
+
     m_sceneStack.push_back(createScene(0));
     m_sceneStack.back()->Init();
 }
 
 void Game::Update(float dt)
 {
+    processSceneRequest();
+    // update current scene
     m_sceneStack.back()->Update(dt);
 }
 
@@ -31,9 +41,16 @@ void Game::ProcessInput(float dt)
 
 void Game::Render(float dt)
 {
-    m_sceneStack.back()->Render(dt);
+    for(const auto &scene : m_sceneStack)
+    {
+        renderSystem->BeginFrame(scene.get());
+        renderSystem->Render(scene.get(), dt);
+    }
 }
 
+#pragma endregion
+
+#pragma region scene_stack
 Scene* Game::GetCurrentScene()
 {
     if(m_sceneStack.empty()) return nullptr;
@@ -72,3 +89,5 @@ std::unique_ptr<Scene> Game::createScene(unsigned int sceneID)
     if(sceneID == 0) return std::make_unique<GamePlayScene>(Width, Height);
     return nullptr;
 }
+
+#pragma endregion

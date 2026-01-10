@@ -3,7 +3,11 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include <vector>
+
 #include "camera.h"
+#include "light.h"
+#include "ibl_generator.h"
 
 // operator for scene management
 enum class SceneOp { None, Push, Pop };
@@ -12,6 +16,8 @@ struct SceneRequest
     SceneOp op = SceneOp::None;
     unsigned int sceneID;
 };
+
+enum class RenderType { Forward, Deferred };
 
 class Scene
 {
@@ -22,7 +28,7 @@ public:
 
     // constructor(s)
     Scene(){ };
-    Scene(unsigned int width, unsigned int height) : Width(width), Height(height) { };
+    Scene(unsigned int width, unsigned int height) : Width(width), Height(height), Keys{0}, KeysProcessed{0} { };
     virtual ~Scene() = default;
 
     // init scene
@@ -37,17 +43,23 @@ public:
     // getter
     SceneRequest GetSceneRequest() { return Request; }
     Camera* GetCamera() { return MainCamera; }
-
+    std::vector<Light*> GetLights() { return Lights; }
+    RenderType GetRenderType() { return renderType; }
+    IBLData GetIBLData() { return IBLtextures; }
     // setter
     void RequestClear() { Request = {SceneOp::None, {}}; }
 
 protected:
     // screen size
     unsigned int Width, Height;
-    
     // all scenes except menu scene have a main camera 
     Camera *MainCamera = nullptr;
-    
+    // lights
+    std::vector<Light*> Lights;
+    // render type
+    RenderType renderType;
+    // IBL data
+    IBLData IBLtextures;
     // scene request functions
     void RequestPush(unsigned int sceneID) { Request = {SceneOp::Push, sceneID}; }
     void RequestPop() { Request = {SceneOp::Pop, {}}; }

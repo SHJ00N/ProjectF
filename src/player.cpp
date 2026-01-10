@@ -50,8 +50,11 @@ void Player::Move(Camera_Movement direction, Camera &camera, Chunk *chunk, float
     moveDir = glm::normalize(moveDir);
 
     // project moveDir to ground normal
-    glm::vec3 normal = chunk->GetWorldNormal(ObjectTransform.position.x, ObjectTransform.position.z);
-    glm::vec3 projectedMove = glm::normalize(moveDir - normal * glm::dot(moveDir, normal));
+    glm::vec3 projectedMove;
+    if(chunk){
+        glm::vec3 normal = chunk->GetWorldNormal(ObjectTransform.position.x, ObjectTransform.position.z);
+        projectedMove = glm::normalize(moveDir - normal * glm::dot(moveDir, normal));
+    }
 
     // set camera distance
     float dot = glm::dot(moveDir, frontXZ);
@@ -65,7 +68,7 @@ void Player::Move(Camera_Movement direction, Camera &camera, Chunk *chunk, float
     ObjectTransform.rotation.y += delta * dt * 10.0f;
 
     // move
-    ObjectTransform.position += projectedMove * velocity;
+    ObjectTransform.position += (chunk ? projectedMove : glm::normalize(glm::vec3(1.0f))) * velocity;
     if(chunk) UpdateHeight(chunk->GetWorldHeight(ObjectTransform.position.x, ObjectTransform.position.z), dt);
 }
 

@@ -8,6 +8,9 @@ void SkeletalMeshRenderer::Draw(Shader &shader, GameObject &gameObject, float de
     // set the model matrix uniform
     shader.Use();
     shader.SetMatrix4("model", modelMatrix);
+    // set normal amtrix uniform
+    glm::mat4 normalMatrix = glm::transpose(glm::inverse(modelMatrix));
+    shader.SetMatrix4("normalMatrix", normalMatrix);
 
     // set animation 
     gameObject.Animator3D.UpdateAnimation(deltaTime);

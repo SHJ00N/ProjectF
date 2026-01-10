@@ -2,47 +2,59 @@
 
 #include "game_play_scene.h"
 #include "resource_manager.h"
-#include "chunk_grid.h"
-#include "skeletal_mesh_renderer.h"
-#include "player.h"
 
-SkeletalMeshRenderer *skeletalRenderer;
-ChunkGrid *world;
-Player *player;
+#include "direction_light.h"
 
 GamePlayScene::GamePlayScene(unsigned int width, unsigned int height) : Scene(width, height)
 {
+    // set render type
+    renderType = RenderType::Deferred;
 }
 
 GamePlayScene::~GamePlayScene()
 {
-    delete MainCamera;
+    delete MainCamera; // parent camera pointer
+    // parent lights pointer vector
+    for(const auto& iter : Lights)
+    {
+        delete iter;
+    }
+    Lights.clear();
+    // current scene class pointers
     delete skeletalRenderer;
     delete world;
     delete player;
+    // delete IBL textures
+    IBLtextures.Destroy();
 }
 
 void GamePlayScene::Init()
 {
     // load shaders
-    ResourceManager::LoadShader("shaders/sample.vert", "shaders/sample.frag", nullptr, nullptr, nullptr, "modelLoading");
+    ResourceManager::LoadShader("shaders/model_shader/boneMesh.vert", "shaders/model_shader/mesh.frag", nullptr, nullptr, nullptr, "boneModel");
     ResourceManager::LoadShader("shaders/gpuheight.vert", "shaders/gpuheight.frag", nullptr, "shaders/gpuheight.tcs", "shaders/gpuheight.tes", "terrainShader");
-    // load models
-    ResourceManager::LoadModel("resources/object/knight/knight.dae", false, "knight");
-    // load animations
-    ResourceManager::LoadAnimation("resources/animation/knight/knight_idle.dae", ResourceManager::GetModel("knight"), "knight_idle");
-    ResourceManager::LoadAnimation("resources/animation/knight/knight_run.dae", ResourceManager::GetModel("knight"), "knight_run");
-    // load terrains
-    ResourceManager::LoadTerrain("resources/texture/Diffuse_16BIT_PNG.png", "resources/texture/Heightmap_16BIT_PNG.png", "resources/texture/CombinedNormal_8BIT_PNG.png", "snowField", 1024.0f, 1.0f, 64);
+    ResourceManager::LoadShader("shaders/PBR/background.vert", "shaders/PBR/background.frag", nullptr, nullptr, nullptr, "background");
+    // configure shaders
+    ResourceManager::GetShader("background").Use();
+    ResourceManager::GetShader("background").SetInteger("environmentMap", 0);
 
+    // load models
+    ResourceManager::LoadModel("resources/object/knight2/SKM_DKM_Full_With_Sword.fbx", true, "knight");
+    // load animations
+    ResourceManager::LoadAnimation("resources/animation/knight2/Anim_DKM_Idle.fbx", ResourceManager::GetModel("knight"), "knight_idle");
+    ResourceManager::LoadAnimation("resources/animation/knight2/Anim_DKM_Run_Fwd.fbx", ResourceManager::GetModel("knight"), "knight_run");
+    // load terrains
+    ResourceManager::LoadTerrain("resources/texture/Diffuse_16BIT_PNG.png", "resources/texture/Heightmap_16BIT_PNG.png", "resources/texture/CombinedNormal_8BIT_PNG.png", "snowField", 1024.0f, 1.0f, 20);
+    // create IBL textures
+    IBLtextures = IBLGenerator::GenerateIBLFromHDR("resources/texture/galaxy_hdr.png");
     // create main camera
     MainCamera = new Camera();
-
+    // create lights
+    Lights.push_back(new DirLight(LightType::Direction, glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.2f), glm::vec3(10.0f), glm::vec3(1.0f)));
     // create renderers
     skeletalRenderer = new SkeletalMeshRenderer();
-
     // create chunk grid and create chunks
-    world = new ChunkGrid(2);
+    world = new ChunkGrid(1);
     int n = world->GetGridSize();
     for(int z = 0; z < n; z++)
     {
@@ -54,7 +66,7 @@ void GamePlayScene::Init()
     }
 
     // create game objects and set their default animation
-    player = new Player(ResourceManager::GetModel("knight"), glm::vec3(0.0f), glm::vec3(1.0f), glm::vec3(0.0f, 90.0f, 0.0f));
+    player = new Player(ResourceManager::GetModel("knight"), glm::vec3(0.0f), glm::vec3(0.01f), glm::vec3(0.0f, 90.0f, 0.0f));
     player->Animator3D.PlayAnimation(&ResourceManager::GetAnimation("knight_idle"));
     player->UpdateHeight(world->GetChunk(player->ObjectTransform.position.x, player->ObjectTransform.position.z)->GetWorldHeight(player->ObjectTransform.position.x, player->ObjectTransform.position.z), 0);
 
@@ -71,8 +83,6 @@ void GamePlayScene::Update(float dt)
     MainCamera->Update(player->ObjectTransform.position, dt);
     glm::mat4 projection = glm::perspective(glm::radians(MainCamera->fov), (float)Width / (float)Height, 0.1f, 5000.0f);
     glm::mat4 view = MainCamera->GetViewMatrix();
-    ResourceManager::GetShader("modelLoading").Use().SetMatrix4("projection", projection);
-    ResourceManager::GetShader("modelLoading").SetMatrix4("view", view);
     ResourceManager::GetShader("terrainShader").Use().SetMatrix4("projection", projection);
     ResourceManager::GetShader("terrainShader").SetMatrix4("view", view);
 }
@@ -108,7 +118,7 @@ void GamePlayScene::ProcessInput(float dt)
 
 void GamePlayScene::Render(float dt)
 {
-    skeletalRenderer->Draw(ResourceManager::GetShader("modelLoading"), *player, dt);
+    skeletalRenderer->Draw(ResourceManager::GetShader("boneModel"), *player, dt);
     world->Draw(ResourceManager::GetShader("terrainShader"));
 }
 

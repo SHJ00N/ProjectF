@@ -20,6 +20,9 @@ void Mesh::Draw(Shader &shader){
     unsigned int specularNr = 1;
     unsigned int normalNr = 1;
     unsigned int heightNr = 1;
+    unsigned int metallicNr = 1;
+    unsigned int roughnessNR = 1;
+    unsigned int ambientNR = 1;
     for(unsigned int i = 0; i < textures.size(); i++){
         glActiveTexture(GL_TEXTURE0 + i);
         string number;
@@ -27,7 +30,18 @@ void Mesh::Draw(Shader &shader){
         if(name == "texture_diffuse") number = to_string(diffuseNr++);
         else if(name == "texture_specular") number = to_string(specularNr++);
         else if(name == "texture_normal") number = to_string(normalNr++);
-        else if(name == "texture_height") number = to_string(heightNr++);
+        else if(name == "texture_metallic") {
+            shader.SetInteger("hasMetallic", 1);
+            number = to_string(metallicNr++);
+        }
+        else if(name == "texture_roughness") {
+            shader.SetInteger("hasRoughness", 1);
+            number = to_string(roughnessNR++);
+        }
+        else if(name == "texture_ambient") {
+            shader.SetInteger("hasAO", 1);
+            number = to_string(ambientNR++); 
+        }
 
         shader.SetInteger(("material." + name + number).c_str(), i);
         glBindTexture(GL_TEXTURE_2D, textures[i].id);
