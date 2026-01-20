@@ -5,11 +5,11 @@ ChunkGrid::ChunkGrid(int gridSize) : gridSize(gridSize)
     Grid.resize(gridSize * gridSize);
 }
 
-void ChunkGrid::SetupChunkTerrain(int x, int z, Terrain &terrain)
+void ChunkGrid::SetupChunkTerrain(int x, int z, Terrain &terrain, Shader &shader)
 {
     int index = getIndexFromChunkCoords(x, z);
     if(index == -1) return;
-    Grid[index] = std::make_shared<Chunk>(x, z, terrain);
+    Grid[index] = std::make_shared<Chunk>(x, z, terrain, shader);
 }
 
 Chunk* ChunkGrid::GetChunk(int x, int z)
@@ -24,16 +24,6 @@ Chunk* ChunkGrid::GetChunk(float worldX, float worldZ)
 {
     glm::ivec2 chunkCoords = getChunkCoordsFromWorldPos(worldX, worldZ);
     return GetChunk(chunkCoords.x, chunkCoords.y);
-}
-
-void ChunkGrid::Draw(Shader &shader)
-{
-    shader.Use();
-    for (auto &chunkPtr : Grid)
-    {
-        if (chunkPtr)
-            chunkPtr->Draw(shader);
-    }
 }
 
 int ChunkGrid::getIndexFromChunkCoords(int chunkX, int chunkZ)

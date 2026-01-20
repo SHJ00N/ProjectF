@@ -8,6 +8,7 @@
 #include "chunk_grid.h"
 #include "skeletal_mesh_renderer.h"
 #include "player.h"
+#include "bone_demo_obj.h"
 
 class GamePlayScene : public Scene
 {
@@ -21,7 +22,6 @@ public:
     void Start() override;
     void Update(float dt) override;
     void ProcessInput(float dt) override;
-    void Render(float dt) override;
     void End() override;
 
 private:
@@ -29,4 +29,5 @@ private:
     SkeletalMeshRenderer *skeletalRenderer;
     ChunkGrid *world;
     Player *player;
+    BoneDemoObj *boneDemoObj;
 };

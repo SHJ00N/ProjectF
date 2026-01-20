@@ -1,11 +1,15 @@
 #pragma once
 
-#include "model_renderer.h"
 #include "shader.h"
-#include "game_object.h"
+#include "transform.h"
+#include "model.h"
+#include "animator.h"
 
-class SkeletalMeshRenderer : public ModelRenderer
+class SkeletalMeshRenderer
 {
 public:
-    void Draw(Shader &shader, GameObject &gameObject, float deltaTime) override;
+    SkeletalMeshRenderer();
+
+    void Draw(Shader &shader, Transform &transform, Model &model, Animator &animator);
+    void DrawShadow(Transform &transform, Model &model, Animator &animator);
 };

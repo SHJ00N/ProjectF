@@ -1,12 +1,15 @@
 #pragma once
 
-#include "model_renderer.h"
 #include "shader.h"
-#include "game_object.h"
+#include "transform.h"
+#include "model.h"
 
 // base renderer class
-class StaticMeshRenderer : public ModelRenderer
+class StaticMeshRenderer
 {
 public:
-    void Draw(Shader &shader, GameObject &gameObject, float deltaTime) override;
+    StaticMeshRenderer();
+    
+    void Draw(Shader &shader, Transform &transform, Model &model);
+    void DrawShadow(Transform &transform, Model &model);
 };

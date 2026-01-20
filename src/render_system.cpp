@@ -23,6 +23,7 @@ RenderSystem::~RenderSystem()
     if(m_cubeVAO) glDeleteVertexArrays(1, &m_cubeVAO);
     delete m_geometryPass;
     delete m_pbrPass;
+    delete m_cascadedShadowPass;
 }
 
 #pragma endregion
@@ -34,6 +35,7 @@ void RenderSystem::Init()
     // create render pass obj
     m_geometryPass = new GeometryPass(m_width, m_height);
     m_pbrPass = new PBRPass();
+    m_cascadedShadowPass = new CascadedShadowPass(m_width, m_height);
 }
 
 void RenderSystem::BeginFrame(Scene *scene)
@@ -41,8 +43,6 @@ void RenderSystem::BeginFrame(Scene *scene)
     if(scene->GetRenderType() == RenderType::Deferred)
     {
         updateUBO(scene);
-        // geometry pass
-        m_geometryPass->Begin();
     }
 }
 
@@ -50,13 +50,12 @@ void RenderSystem::Render(Scene *scene, float dt)
 {
     if(scene->GetRenderType() == RenderType::Deferred)
     {
-        // draw geometry
-        scene->Render(dt);
-        m_geometryPass->End();
+        // geometry pass
+        m_geometryPass->Render(scene);
+        // cascaded shadow pass
+        m_cascadedShadowPass->Render(scene);
         // pbr lighting pass
-        m_pbrPass->Begin();
-        m_pbrPass->Render(m_geometryPass->GetTextaures(), scene->GetIBLData());
-        m_pbrPass->End();
+        m_pbrPass->Render(m_geometryPass->GetTextures(), m_cascadedShadowPass->GetShadowMapTexture(), scene->GetIBLData());
         
         // render skybox with forward rendering
         renderSkyBox(scene->GetIBLData().envCubeMap, m_geometryPass->GetGBuffer());
@@ -123,6 +122,9 @@ void RenderSystem::updateUBO(Scene* scene)
             data.light.direction = static_cast<DirLight*>(light)->Direction;
             // bool variable
             data.hasDirLight = 1;
+
+            // set light direction for cascaded shadow pass
+            m_cascadedShadowPass->SetLightDirection(glm::normalize(data.light.direction));
 
             // configure uniform buffer data
             glBindBuffer(GL_UNIFORM_BUFFER, m_dirLightUBO);
@@ -220,9 +222,11 @@ void RenderSystem::renderCube()
         glBindVertexArray(0);
     }
     // render Cube
+    glDisable(GL_CULL_FACE);
     glBindVertexArray(m_cubeVAO);
     glDrawArrays(GL_TRIANGLES, 0, 36);
     glBindVertexArray(0);
+    glEnable(GL_CULL_FACE);
 }
 
 #pragma endregion

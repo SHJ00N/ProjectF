@@ -2,33 +2,71 @@
 
 float NormalizeAngle(float angle);
 
-Player::Player() : GameObject(), Speed(PLAYER_SPEED)
+#pragma region lifecycle
+Player::Player() : Speed(PLAYER_SPEED)
 {
 }
 
-Player::Player(Model &model, glm::vec3 position, glm::vec3 size, glm::vec3 rotation, glm::vec2 velocity)
-    : GameObject(model, position, size, rotation, velocity), Speed(PLAYER_SPEED)
+Player::Player(Model &model, Shader &shader, glm::vec3 position, glm::vec3 size, glm::vec3 rotation, glm::vec2 velocity) : Speed(PLAYER_SPEED)
 {
+    ObjectTransform.position = position;
+    ObjectTransform.scale = size;
+    ObjectTransform.rotation = rotation;
+    m_model = &model;
+    m_shader = &shader;
 }
 
-void Player::UpdateHeight(float terrainHeight, float dt)
+#pragma endregion
+
+#pragma region game_object_update
+void Player::Update(float dt)
 {
-    float yDiff = terrainHeight - ObjectTransform.position.y;
+    // update animator
+    UpdateAnimation(dt);
+    // update height based on terrain
+    updateHeight(dt);
+}
+
+void Player::Render()
+{
+    m_renderer.Draw(*m_shader, ObjectTransform, *m_model, m_animator3D);
+}
+
+void Player::RenderShadow()
+{
+    m_renderer.DrawShadow(ObjectTransform, *m_model, m_animator3D);
+}
+void Player::UpdateAnimation(float dt)
+{
+    m_animator3D.UpdateAnimation(dt);
+}
+void Player::SetAnimation(Animation* animation)
+{
+    m_animator3D.PlayAnimation(animation);
+}
+
+void Player::updateHeight(float dt)
+{
+    float yDiff = m_terrainHeight - ObjectTransform.position.y;
     // set object height
-    if(yDiff > 0.0f)
-    {
-        ObjectTransform.position.y = terrainHeight;
-    }
-    else
-    {
-        ObjectTransform.position.y = glm::mix(
-            ObjectTransform.position.y,
-            terrainHeight,
-            10.0f * dt
-        );
-    }
+    // if(yDiff > 0.0f)
+    // {
+    //     ObjectTransform.position.y = m_terrainHeight;
+    // }
+    // else
+    // {
+    //     ObjectTransform.position.y = glm::mix(
+    //         ObjectTransform.position.y,
+    //         m_terrainHeight,
+    //         10.0f * dt
+    //     );
+    // }
+    ObjectTransform.position.y = m_terrainHeight;
 }
 
+#pragma endregion
+
+#pragma region player_controls
 void Player::Move(Camera_Movement direction, Camera &camera, Chunk *chunk, float dt)
 {
     float velocity = Speed * dt;
@@ -69,7 +107,8 @@ void Player::Move(Camera_Movement direction, Camera &camera, Chunk *chunk, float
 
     // move
     ObjectTransform.position += (chunk ? projectedMove : glm::normalize(glm::vec3(1.0f))) * velocity;
-    if(chunk) UpdateHeight(chunk->GetWorldHeight(ObjectTransform.position.x, ObjectTransform.position.z), dt);
+    if(chunk) SetTerrainHeight(chunk->GetWorldHeight(ObjectTransform.position.x, ObjectTransform.position.z));
+    updateHeight(dt);
 }
 
 float NormalizeAngle(float angle)
@@ -78,3 +117,5 @@ float NormalizeAngle(float angle)
     while(angle < -180.0f) angle += 360.0f;
     return angle;
 }
+
+#pragma endregion

@@ -7,10 +7,10 @@ Terrain::Terrain() : HeightScale(64.0f), WorldScale(1.0f), Rez(20)
 Terrain::Terrain(const char *diffuseMapFile, const char *heightMapFile, const char *normalMapFile, const char *roughMapFile, float heightScale, float worldScale, unsigned int rez) : HeightScale(heightScale), WorldScale(worldScale), Rez(rez)
 {
     // load texture
-    DiffuseMap = textureFromFile(diffuseMapFile, "DIFFUSE");
-    HeightMap = textureFromFile(heightMapFile, "HEIGHT");
-    NormalMap = textureFromFile(normalMapFile, "NORMAL");
-    RoughnessMap = textureFromFile(roughMapFile, "ROUGHNESS");
+    DiffuseMap = textureFromFile(diffuseMapFile);
+    RoughnessMap = textureFromFile(roughMapFile);
+    HeightMap = loadHeightMap(heightMapFile);
+    NormalMap = loadNormalMap(normalMapFile);
 
     // generate vertex
     for(unsigned int i = 0; i < rez; i++)
@@ -84,7 +84,7 @@ glm::vec3 Terrain::GetNormal(float worldX, float worldZ)
     return glm::normalize(normal);
 }
 
-void Terrain::Draw(Shader &shader)
+void Terrain::Render(Shader &shader)
 {
     shader.SetInteger("heightMap", 0);
     shader.SetInteger("texture_diffuse", 1);
@@ -100,6 +100,20 @@ void Terrain::Draw(Shader &shader)
     glBindTexture(GL_TEXTURE_2D, NormalMap);
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, RoughnessMap);
+
+    glBindVertexArray(VAO);
+    glDrawArrays(GL_PATCHES, 0, NUM_PATCH_PTS * Rez * Rez);
+
+    glBindVertexArray(0);
+}
+
+void Terrain::RenderShadow(Shader &shadowShader)
+{
+    shadowShader.SetInteger("heightMap", 0);
+    shadowShader.SetFloat("heightScale", HeightScale);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, HeightMap);
 
     glBindVertexArray(VAO);
     glDrawArrays(GL_PATCHES, 0, NUM_PATCH_PTS * Rez * Rez);
@@ -128,16 +142,13 @@ void Terrain::setUpTerrain()
     glBindVertexArray(0);
 }
 
-unsigned int Terrain::textureFromFile(const char *path, std::string type, bool gamma){
+unsigned int Terrain::textureFromFile(const char *path, bool gamma){
     stbi_set_flip_vertically_on_load(true);
     unsigned int textureID;
     glGenTextures(1, &textureID);
 
     int width, height, nrComponents;
-    unsigned char *data = nullptr;
-    if(type == "HEIGHT")
-        data = stbi_load(path, &heightMapWidth, &heightMapHeight, &nrComponents, 1);
-    else data = stbi_load(path, &width, &height, &nrComponents, 0);
+    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
 
     if(data){
         GLenum internalFormat;
@@ -156,7 +167,78 @@ unsigned int Terrain::textureFromFile(const char *path, std::string type, bool g
 
         glBindTexture(GL_TEXTURE_2D, textureID);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, type == "HEIGHT" ? heightMapWidth : width, type == "HEIGHT" ? heightMapHeight : height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        
+        stbi_image_free(data);
+    } else {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
+    stbi_set_flip_vertically_on_load(false);
+    return textureID;
+}
+
+unsigned int Terrain::loadHeightMap(const char *heightMapFile)
+{
+    stbi_set_flip_vertically_on_load(true);
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    int nrComponents;
+    unsigned short *data = stbi_load_16(heightMapFile, &heightMapWidth, &heightMapHeight, &nrComponents, 1);
+    if(data)
+    {
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R16, heightMapWidth, heightMapHeight, 0, GL_RED, GL_UNSIGNED_SHORT, data);
+        
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        
+        heightData.assign(data, data + heightMapWidth * heightMapHeight);
+        stbi_image_free(data);
+    }
+    else
+    {
+        std::cout << "Failed to load height map at path: " << heightMapFile << std::endl;
+        stbi_image_free(data);
+    }
+    stbi_set_flip_vertically_on_load(false);
+    return textureID;
+}
+
+unsigned int Terrain::loadNormalMap(const char *normalMapFile)
+{
+    stbi_set_flip_vertically_on_load(true);
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    int width, height, nrComponents;
+    unsigned char *data = stbi_load(normalMapFile, &width, &height, &nrComponents, 0);
+    if(data)
+    {
+        GLenum internalFormat;
+        GLenum dataFormat;
+        if(nrComponents == 3){
+            internalFormat = GL_RGB;
+            dataFormat = GL_RGB;
+        }
+        else if(nrComponents == 4){
+            internalFormat = GL_RGBA;
+            dataFormat = GL_RGBA;
+        }
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, dataFormat, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -164,14 +246,12 @@ unsigned int Terrain::textureFromFile(const char *path, std::string type, bool g
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-        if(type == "HEIGHT")
-            heightData.assign(data, data + heightMapWidth * heightMapHeight);
-        if(type == "NORMAL")
-            normalData.assign(data, data + width * height);
-        
+        normalData.assign(data, data + width * height * nrComponents);
         stbi_image_free(data);
-    } else {
-        std::cout << "Texture failed to load at path: " << path << std::endl;
+    }
+    else
+    {
+        std::cout << "Failed to load normal map at path: " << normalMapFile << std::endl;
         stbi_image_free(data);
     }
     stbi_set_flip_vertically_on_load(false);
@@ -205,7 +285,7 @@ float Terrain::getHeightFromHeightMap(int x, int z)
     z = glm::clamp(z, 0, heightMapHeight - 1);
 
     int index = z * heightMapWidth + x;
-    float height = heightData[index] / 255.0f;
+    float height = heightData[index] / 65535.0f;
 
     return height * HeightScale;
 }

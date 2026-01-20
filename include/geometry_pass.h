@@ -1,7 +1,8 @@
 #pragma once
 
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
+
+#include "scene.h"
 
 struct GBufferTextures
 {
@@ -19,11 +20,11 @@ public:
     ~GeometryPass();
 
     // loop
-    void Begin();
-    void End();
+    void Configure();
+    void Render(Scene *scene);
 
     // getter
-    GBufferTextures GetTextaures() { return {m_gDepth, m_gNormal, m_gAlbedoAO, m_gRoughMetal}; }
+    GBufferTextures GetTextures() { return {m_gDepth, m_gNormal, m_gAlbedoAO, m_gRoughMetal}; }
     unsigned int GetGBuffer() { return m_gBuffer; }
 private:
     unsigned int m_gBuffer;

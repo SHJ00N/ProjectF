@@ -10,13 +10,15 @@ PBRPass::PBRPass() : m_quadVBO(0), m_quadVAO(0)
     ResourceManager::LoadShader("shaders/PBR/pbr.vert", "shaders/PBR/pbr.frag", nullptr, nullptr, nullptr, "PBR");
     // configure PBR shader
     ResourceManager::GetShader("PBR").Use();
-    ResourceManager::GetShader("PBR").SetInteger("gDepth",        0);
-    ResourceManager::GetShader("PBR").SetInteger("gNormal",       1);
-    ResourceManager::GetShader("PBR").SetInteger("gAlbedoAO",     2);
-    ResourceManager::GetShader("PBR").SetInteger("gRoughMetal",   3);
-    ResourceManager::GetShader("PBR").SetInteger("irradianceMap", 4);
-    ResourceManager::GetShader("PBR").SetInteger("prefilterMap",  5);
-    ResourceManager::GetShader("PBR").SetInteger("brdfLUT",       6);
+    ResourceManager::GetShader("PBR").SetInteger("gDepth",          0);
+    ResourceManager::GetShader("PBR").SetInteger("gNormal",         1);
+    ResourceManager::GetShader("PBR").SetInteger("gAlbedoAO",       2);
+    ResourceManager::GetShader("PBR").SetInteger("gRoughMetal",     3);
+    ResourceManager::GetShader("PBR").SetInteger("irradianceMap",   4);
+    ResourceManager::GetShader("PBR").SetInteger("prefilterMap",    5);
+    ResourceManager::GetShader("PBR").SetInteger("brdfLUT",         6);
+    ResourceManager::GetShader("PBR").SetInteger("shadowMap",       7);
+    ResourceManager::GetShader("PBR").SetInteger("shadowMapOffset", 8);
 }
 
 PBRPass::~PBRPass()
@@ -32,7 +34,7 @@ PBRPass::~PBRPass()
 #pragma endregion
 
 #pragma region loop
-void PBRPass::Begin()
+void PBRPass::Configure()
 {
     // bind framebuffer
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -40,8 +42,11 @@ void PBRPass::Begin()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void PBRPass::Render(GBufferTextures gBufferTextures, IBLData iblTextures)
+void PBRPass::Render(GBufferTextures gBufferTextures, ShadowMapTexture shadowMap, IBLData iblTextures)
 {
+    // set state
+    Configure();
+
     ResourceManager::GetShader("PBR").Use();
     // update sampler
     glActiveTexture(GL_TEXTURE0);
@@ -58,15 +63,19 @@ void PBRPass::Render(GBufferTextures gBufferTextures, IBLData iblTextures)
     glBindTexture(GL_TEXTURE_CUBE_MAP, iblTextures.prefilterMap);
     glActiveTexture(GL_TEXTURE6);
     glBindTexture(GL_TEXTURE_2D, m_brdfLut);
+    // update shadow map
+    glActiveTexture(GL_TEXTURE7);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, shadowMap.shadowMapTexture);
+    glActiveTexture(GL_TEXTURE8);
+    glBindTexture(GL_TEXTURE_3D, shadowMap.shadowMapOffsetTexture.textureID);
+    ResourceManager::GetShader("PBR").SetInteger("shadowMapOffsetTextureSize", shadowMap.shadowMapOffsetTexture.windowSize);
+    ResourceManager::GetShader("PBR").SetInteger("shadowMapOffsetFilterSize", shadowMap.shadowMapOffsetTexture.filterSize);
+    ResourceManager::GetShader("PBR").SetFloat("shadowMapOffsetRandomRadius", shadowMap.shadowMapOffsetTexture.radius);
     // draw
     renderQuad();
-}
 
-void PBRPass::End()
-{
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
-
 #pragma endregion
 
 #pragma region render draw function

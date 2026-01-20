@@ -1,6 +1,6 @@
 #include "chunk.h"
 
-Chunk::Chunk(int chunkX, int chunkZ, Terrain &terrain) : chunkX(chunkX), chunkZ(chunkZ), ChunkTerrain(&terrain)
+Chunk::Chunk(int chunkX, int chunkZ, Terrain &terrain, Shader &shader) : chunkX(chunkX), chunkZ(chunkZ), ChunkTerrain(&terrain), m_shader(&shader)
 {
     // set chunk position
     ChunkTransform.position = glm::vec3(chunkX * ChunkTerrain->GetWorldWidth(), 0.0f, -chunkZ * ChunkTerrain->GetWorldHeight());
@@ -20,11 +20,12 @@ glm::vec3 Chunk::GetWorldNormal(float worldX, float worldZ)
     return ChunkTerrain->GetNormal(terrainWorldPos.x, terrainWorldPos.z);
 }
 
-void Chunk::Draw(Shader &shader)
+void Chunk::Render()
 {
-    // set model matrix
-    shader.SetMatrix4("model", ChunkTransform.GetModelMatrix());
+    m_terrainRenderer.Draw(*m_shader, ChunkTransform, *ChunkTerrain);
+}
 
-    // draw terrain in this chunk
-    ChunkTerrain->Draw(shader);
+void Chunk::RenderShadow()
+{
+    m_terrainRenderer.DrawShadow(ChunkTransform, *ChunkTerrain);
 }

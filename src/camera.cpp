@@ -11,6 +11,8 @@ Camera::Camera(glm::vec3 position, glm::vec3 up, float yaw, float pitch){
     fov = FOV;
     targetFov = FOV;
     followYawOffset = 0.0f;
+    nearPlane = NEAR_PLANE;
+    farPlane = FAR_PLANE;
 }
 
 Camera::Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch){
@@ -24,6 +26,8 @@ Camera::Camera(float posX, float posY, float posZ, float upX, float upY, float u
     fov = FOV;
     targetFov = FOV;
     followYawOffset = 0.0f;
+    nearPlane = NEAR_PLANE;
+    farPlane = FAR_PLANE;
 }
 
 void Camera::Update(glm::vec3 &targetPos, float dt){
@@ -46,14 +50,14 @@ void Camera::Update(glm::vec3 &targetPos, float dt){
     cameraUp    = glm::normalize(glm::cross(cameraRight, cameraFront)); 
 
     // zoom when the pitch angle is low
-    if(pitch > 10.0f)
-    {
-        fov = glm::mix(fov, 25.0f, dt * 6.0f);
-    } 
-    else 
-    {
-        fov = glm::mix(fov, targetFov, dt * 6.0f);
-    }
+    // if(pitch > 10.0f)
+    // {
+    //     fov = glm::mix(fov, 25.0f, dt * 6.0f);
+    // } 
+    // else 
+    // {
+    //     fov = glm::mix(fov, targetFov, dt * 6.0f);
+    // }
 }
 
 glm::mat4 Camera::GetViewMatrix(){

@@ -16,7 +16,7 @@ const float FOV = 45.0f;
 const float NORMAL_DISTANCE = 5.0f;
 const float BACK_DISTANCE = 3.5f;
 const float NEAR_PLANE = 0.1f;
-const float FAR_PLANE = 5000.0f;
+const float FAR_PLANE = 3000.0f;
 
 class Camera
 {
@@ -36,8 +36,10 @@ public:
     float sensitivity;
     float fov;
     float targetFov;
+    float nearPlane;
+    float farPlane;
 
-    Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 0.1f, 0.0f), float yaw = YAW, float pitch = PITCH);
+    Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH);
     Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw = YAW, float pitch = PITCH);
 
     void Update(glm::vec3 &targetPos,float dt);

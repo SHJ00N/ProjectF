@@ -12,7 +12,7 @@
                 "/utf-8",
 
                 "/I${workspaceFolder}\\include",
-
+                
                 "${workspaceFolder}\\src\\*.cpp",
                 "${workspaceFolder}\\src\\*.c",
 

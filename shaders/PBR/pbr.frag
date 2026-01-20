@@ -22,6 +22,17 @@ layout (std140, binding = 1) uniform DirLightBlock
     int hasDirLight;
 };
 
+layout (std140, binding = 2) uniform LightSpaceMatrices
+{
+    mat4 lightSpaceMatrices[16];
+};
+
+layout (std140, binding = 3) uniform CSMBlock
+{
+    float cascadePlaneDistances[4];
+    int cascadeCount;   // number of frusta - 1
+};
+
 // gbuffer textures
 uniform sampler2D gDepth;
 uniform sampler2D gNormal;
@@ -31,6 +42,14 @@ uniform sampler2D gRoughMetal;
 uniform samplerCube irradianceMap;
 uniform samplerCube prefilterMap;
 uniform sampler2D brdfLUT;
+
+// shadow data
+uniform sampler2DArray shadowMap;
+uniform sampler3D shadowMapOffset;
+uniform int shadowMapOffsetTextureSize;
+uniform int shadowMapOffsetFilterSize;
+uniform float shadowMapOffsetRandomRadius;
+
 
 // lights
 uniform vec3 lightPositions[4];
@@ -155,6 +174,126 @@ vec3 calculatePointLight(vec3 lightPosition, vec3 lightColor, vec3 WorldPos, vec
     return reflectanceEquation(V, N, F0, albedo, roughness, metallic, L, radiance);
 }
 
+// calculate shadow
+float SampleShadow(int layer, vec3 fragPosWorldSpace, vec3 normal, float bias)
+{
+    vec4 fragPosLightSpace = lightSpaceMatrices[layer] * vec4(fragPosWorldSpace, 1.0);
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5;
+
+    float currentDepth = projCoords.z;
+
+    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0).xy);
+
+    ivec3 offsetCoord;
+    vec2 f = mod(gl_FragCoord.xy, vec2(shadowMapOffsetTextureSize));
+    offsetCoord.yz = ivec2(f);
+
+    float sum = 0.0;
+    int samplesDiv2 = int(shadowMapOffsetFilterSize * shadowMapOffsetFilterSize / 2.0);
+    
+    // check shadow boundary
+    for(int i = 0; i < 4; ++i)
+    {
+        offsetCoord.x = i;
+        vec4 offsets = texelFetch(shadowMapOffset, offsetCoord, 0) * shadowMapOffsetRandomRadius;
+
+        vec2 uv;
+        uv = projCoords.xy + offsets.rg * texelSize;
+        float depth = texture(shadowMap, vec3(uv, layer)).r;
+        sum += (currentDepth - bias > depth) ? 1.0 : 0.0;
+
+        uv = projCoords.xy + offsets.ba * texelSize;
+        depth = texture(shadowMap, vec3(uv, layer)).r;
+        sum += (currentDepth - bias > depth) ? 1.0 : 0.0;
+    }
+
+    float shadow = sum / 8.0;
+
+    // PCF for shadow boundary
+    if(shadow != 0.0 && shadow != 1.0)
+    {
+        for(int i = 4; i < samplesDiv2; ++i)
+        {
+            offsetCoord.x = i;
+            vec4 offsets = texelFetch(shadowMapOffset, offsetCoord, 0) * shadowMapOffsetRandomRadius;
+
+            vec2 uv;
+            uv = projCoords.xy + offsets.rg * texelSize;
+            float depth = texture(shadowMap, vec3(uv, layer)).r;
+            sum += (currentDepth - bias > depth) ? 1.0 : 0.0;
+
+            uv = projCoords.xy + offsets.ba * texelSize;
+            depth = texture(shadowMap, vec3(uv, layer)).r;
+            sum += (currentDepth - bias > depth) ? 1.0 : 0.0;
+        }
+
+        shadow = sum / float(samplesDiv2 * 2.0);
+    }
+
+    return shadow;
+}
+float ShadowCalculation(vec3 fragPosWorldSpace, vec3 normal)
+{
+    vec4 fragPosViewSpace = view * vec4(fragPosWorldSpace, 1.0);
+    float depthValue = abs(fragPosViewSpace.z);
+
+    int layer = -1;
+    for (int i = 0; i < cascadeCount; ++i)
+    {
+        if (depthValue < cascadePlaneDistances[i])
+        {
+            layer = i;
+            break;
+        }
+    }
+    if (layer == -1)
+        layer = cascadeCount;
+
+    vec4 fragPosLightSpace = lightSpaceMatrices[layer] * vec4(fragPosWorldSpace, 1.0);
+
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5;
+
+    float currentDepth = projCoords.z;
+
+    if (currentDepth > 1.0)
+        return 0.0;
+
+    vec3 lightDir = normalize(-dirLight.direction);
+    float bias = max(0.0002 * (1.0 - dot(normal, lightDir)), 0.00005);
+
+    const float biasModifier = 0.5;
+    if (layer == cascadeCount)
+        bias *= 1.0 / (cascadePlaneDistances[cascadeCount - 1] * biasModifier);
+    else
+        bias *= 1.0 / (cascadePlaneDistances[layer] * biasModifier);
+
+    float shadow0 = SampleShadow(layer, fragPosWorldSpace, normal, bias);
+
+    // === Cascade blending ===
+    float shadow = shadow0;
+
+    if (layer < cascadeCount)
+    {
+        float splitNear = (layer == 0) ? 0.0 : cascadePlaneDistances[layer - 1];
+        float splitFar  = cascadePlaneDistances[layer];
+
+        float blendRange = 10.0; // 조절 가능 (월드 단위)
+
+        float blend = smoothstep(
+            splitFar - blendRange,
+            splitFar,
+            depthValue
+        );
+
+        float shadow1 = SampleShadow(layer + 1, fragPosWorldSpace, normal, bias);
+        shadow = mix(shadow0, shadow1, blend);
+    }
+
+    return shadow;
+}
+
 void main()
 {
     float Depth = texture(gDepth, TexCoords).r;
@@ -178,7 +317,12 @@ void main()
 
     // reflectance equation
     vec3 Lo = vec3(0.0);
-    if(hasDirLight == 1) Lo += calculateDirectionLight(V, N, F0, albedo, roughness, metallic);
+    if(hasDirLight == 1)
+    {
+        float shadow = ShadowCalculation(WorldPos, N);
+        vec3 dirLightColor = calculateDirectionLight(V, N, F0, albedo, roughness, metallic);
+        Lo += (1.0 - shadow) * dirLightColor;
+    }
     for(int i = 0; i < 4; ++i) 
     {
         Lo += calculatePointLight(lightPositions[i], lightColors[i], WorldPos, V, N, F0, albedo, roughness, metallic);
@@ -207,4 +351,6 @@ void main()
     color = pow(color, vec3(1.0/2.2));
     
     FragColor = vec4(color, 1.0);
+    //float d = texture(shadowMap, vec3(TexCoords, 0)).r;
+    //FragColor = vec4(vec3(d), 1.0);
 }

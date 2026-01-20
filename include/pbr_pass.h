@@ -1,10 +1,10 @@
 #pragma once
 
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
 
 #include "geometry_pass.h"
 #include "ibl_generator.h"
+#include "cascaded_shadow_pass.h"
 
 class PBRPass
 {
@@ -13,9 +13,8 @@ public:
     ~PBRPass();
 
     // loop
-    void Begin();
-    void Render(GBufferTextures gBufferTextures, IBLData iblTextures);
-    void End();
+    void Configure();
+    void Render(GBufferTextures gBufferTextures, ShadowMapTexture shadowMap, IBLData iblTextures);
 
 private:
     unsigned int m_brdfLut;

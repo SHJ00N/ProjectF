@@ -299,9 +299,11 @@ void IBLGenerator::renderCube()
         glBindVertexArray(0);
     }
     // render Cube
+    glDisable(GL_CULL_FACE);
     glBindVertexArray(cubeVAO);
     glDrawArrays(GL_TRIANGLES, 0, 36);
     glBindVertexArray(0);
+    glEnable(GL_CULL_FACE);
 }
 
 void IBLGenerator::renderQuad()
@@ -326,9 +328,11 @@ void IBLGenerator::renderQuad()
         glEnableVertexAttribArray(1);
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     }
+    glDisable(GL_CULL_FACE);
     glBindVertexArray(quadVAO);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     glBindVertexArray(0);
+    glEnable(GL_CULL_FACE);
 }
 
 #pragma endregion

@@ -61,7 +61,7 @@ GeometryPass::~GeometryPass()
 #pragma endregion
 
 #pragma region loop
-void GeometryPass::Begin()
+void GeometryPass::Configure()
 {
     // bind gbuffer
     glBindFramebuffer(GL_FRAMEBUFFER, m_gBuffer);
@@ -72,8 +72,15 @@ void GeometryPass::Begin()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void GeometryPass::End()
+void GeometryPass::Render(Scene *scene)
 {
+    // start geometry pass
+    Configure();
+    // render all scene meshes
+    for(const auto &renderableObj : scene->GetRenderables())
+    {
+        renderableObj->Render();
+    }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 

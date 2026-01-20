@@ -22,8 +22,8 @@ public:
     Chunk* GetChunk(float worldX, float worldZ);
     glm::ivec2 getChunkCoordsFromWorldPos(float worldX, float worldZ);
 
-    void SetupChunkTerrain(int x, int z, Terrain &terrain);
-    void Draw(Shader &shader);
+    void SetupChunkTerrain(int x, int z, Terrain &terrain, Shader &shader);
+    
 private:
     int gridSize; // N X N grid
 
