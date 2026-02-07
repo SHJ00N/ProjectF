@@ -2,6 +2,7 @@
 layout (location = 0) out vec3 gNormal; 
 layout (location = 1) out vec4 gAlbedoAO;
 layout (location = 2) out vec3 gRM;
+layout (location = 3) out vec2 gTypeSlope;
 
 in vec2 TexCoords;
 in mat3 TBN;
@@ -31,4 +32,6 @@ void main()
 
     gRM.r = hasRoughness == 1 ? texture(material.texture_roughness1, TexCoords).r : 0.5;
     gRM.g = hasMetallic == 1 ? texture(material.texture_metallic1, TexCoords).r : 0.0;
+
+    gTypeSlope.r = 0.0;
 }

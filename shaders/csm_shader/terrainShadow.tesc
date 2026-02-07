@@ -15,8 +15,6 @@ layout (std140, binding = 3) uniform CSMBlock
     int cascadeCount;   // number of frusta - 1
 };
 
-uniform mat4 model;
-
 void main()
 {
     gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
@@ -24,13 +22,13 @@ void main()
 
     if(gl_InvocationID == 0)
     {
-        const int MIN_TESS_LEVEL = 12;
-        const int MAX_TESS_LEVEL = 24;
+        const int MIN_TESS_LEVEL = 2;
+        const int MAX_TESS_LEVEL = 8;
 
-        vec3 worldPos0 = vec3(model * gl_in[0].gl_Position);
-        vec3 worldPos1 = vec3(model * gl_in[1].gl_Position);
-        vec3 worldPos2 = vec3(model * gl_in[2].gl_Position);
-        vec3 worldPos3 = vec3(model * gl_in[3].gl_Position);
+        vec3 worldPos0 = vec3(gl_in[0].gl_Position);
+        vec3 worldPos1 = vec3(gl_in[1].gl_Position);
+        vec3 worldPos2 = vec3(gl_in[2].gl_Position);
+        vec3 worldPos3 = vec3(gl_in[3].gl_Position);
 
         vec3 center = (worldPos0 + worldPos1 + worldPos2 + worldPos3) * 0.25;
 

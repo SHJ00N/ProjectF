@@ -6,7 +6,7 @@
 #include <vector>
 #include <memory>
 
-#include "scene.h"
+#include "scene/scene.h"
 
 class Game
 {

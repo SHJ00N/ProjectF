@@ -8,9 +8,9 @@
 
 #include "texture.h"
 #include "shader.h"
-#include "model.h"
-#include "animation.h"
-#include "terrain.h"
+#include "model/model.h"
+#include "animation/animation.h"
+#include "render/terrain_texture.h"
 
 class ResourceManager
 {
@@ -20,7 +20,7 @@ public:
     static std::map<std::string, Texture2D> Textures;
     static std::map<std::string, Model>     Models;
     static std::map<std::string, Animation> Animations;
-    static std::map<std::string, Terrain>   Terrains;
+    static std::map<std::string, TerrainTexture> TerrainTextures;
     // loads (and generates) a shader program from file loading vertex, fragment (and geometry) shader's source code. If gShaderFile is not nullptr, it also loads a geometry shader
     static Shader    LoadShader(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile, const char *tcShaderFile, const char *teShaderFile, std::string name);
     // retrieves a stored sader
@@ -37,10 +37,10 @@ public:
     static Animation LoadAnimation(const char *file, Model &model, std::string name);
     // retrieves a stored animation
     static Animation& GetAnimation(std::string name);
-    // loads (and generates) terrain from file
-    static Terrain LoadTerrain(const char *diffuseFile, const char *heightFile, const char *normalFile, const char *roughFile, std::string name, float heightScale = 1.0f, float worldScale = 1.0f, unsigned int rez = 20);
-    // retrieves a stored terrain
-    static Terrain& GetTerrain(std::string name);
+    // loads (and generates) a terrain texture form file
+    static TerrainTexture LoadTerrainTexture(const char *diffuseFile, const char *normalFile, const char *roughFile, std::string name, bool gamma = false);
+    // retrieves a stored terrain texture
+    static TerrainTexture& GetTerrainTexture(std::string name);
     // properly de-allocates all loaded resources
     static void      Clear();
 private:
@@ -54,8 +54,8 @@ private:
     static Model loadModelFromFile(const char *file, bool gamma);
     // loads a single animation from file
     static Animation loadAnimationFromFile(const char *file, Model &model);
-    // loads a single terrain from file
-    static Terrain loadTerrainFromFile(const char *diffuseFile, const char *heightFile, const char *normalFile, const char *roughFile, float heightScale, float worldScale, unsigned int rez);
+    // loads a single terrain texture from file
+    static TerrainTexture loadTerrainTextureFromFile(const char *diffuseFile, const char *normalFile, const char *roughFile, bool gamma);
 };
 
 #endif

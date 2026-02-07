@@ -15,7 +15,7 @@ const float SENSITIVITY = 0.1f;
 const float FOV = 45.0f;
 const float NORMAL_DISTANCE = 5.0f;
 const float BACK_DISTANCE = 3.5f;
-const float NEAR_PLANE = 0.1f;
+const float NEAR_PLANE = 1.0f;
 const float FAR_PLANE = 3000.0f;
 
 class Camera

@@ -14,6 +14,7 @@ layout (std140, binding = 0) uniform CameraBlock
     mat4 projection;
     mat4 view;
     vec3 cameraPos;
+    float cameraFov;
 };
 
 layout (std140, binding = 1) uniform DirLightBlock
@@ -38,6 +39,7 @@ uniform sampler2D gDepth;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoAO;
 uniform sampler2D gRoughMetal;
+uniform sampler2D gTypeSlope;
 
 uniform samplerCube irradianceMap;
 uniform samplerCube prefilterMap;
@@ -50,6 +52,8 @@ uniform int shadowMapOffsetTextureSize;
 uniform int shadowMapOffsetFilterSize;
 uniform float shadowMapOffsetRandomRadius;
 
+// SSAO
+uniform sampler2D ssao;
 
 // lights
 uniform vec3 lightPositions[4];
@@ -191,7 +195,7 @@ float SampleShadow(int layer, vec3 fragPosWorldSpace, vec3 normal, float bias)
 
     float sum = 0.0;
     int samplesDiv2 = int(shadowMapOffsetFilterSize * shadowMapOffsetFilterSize / 2.0);
-    
+
     // check shadow boundary
     for(int i = 0; i < 4; ++i)
     {
@@ -236,7 +240,7 @@ float SampleShadow(int layer, vec3 fragPosWorldSpace, vec3 normal, float bias)
 float ShadowCalculation(vec3 fragPosWorldSpace, vec3 normal)
 {
     vec4 fragPosViewSpace = view * vec4(fragPosWorldSpace, 1.0);
-    float depthValue = abs(fragPosViewSpace.z);
+    float depthValue = -fragPosViewSpace.z;
 
     int layer = -1;
     for (int i = 0; i < cascadeCount; ++i)
@@ -250,16 +254,6 @@ float ShadowCalculation(vec3 fragPosWorldSpace, vec3 normal)
     if (layer == -1)
         layer = cascadeCount;
 
-    vec4 fragPosLightSpace = lightSpaceMatrices[layer] * vec4(fragPosWorldSpace, 1.0);
-
-    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-    projCoords = projCoords * 0.5 + 0.5;
-
-    float currentDepth = projCoords.z;
-
-    if (currentDepth > 1.0)
-        return 0.0;
-
     vec3 lightDir = normalize(-dirLight.direction);
     float bias = max(0.0002 * (1.0 - dot(normal, lightDir)), 0.00005);
 
@@ -268,7 +262,7 @@ float ShadowCalculation(vec3 fragPosWorldSpace, vec3 normal)
         bias *= 1.0 / (cascadePlaneDistances[cascadeCount - 1] * biasModifier);
     else
         bias *= 1.0 / (cascadePlaneDistances[layer] * biasModifier);
-
+    
     float shadow0 = SampleShadow(layer, fragPosWorldSpace, normal, bias);
 
     // === Cascade blending ===
@@ -279,13 +273,10 @@ float ShadowCalculation(vec3 fragPosWorldSpace, vec3 normal)
         float splitNear = (layer == 0) ? 0.0 : cascadePlaneDistances[layer - 1];
         float splitFar  = cascadePlaneDistances[layer];
 
-        float blendRange = 10.0; // 조절 가능 (월드 단위)
+        float cascadeSize = splitFar - splitNear; 
+        float blendRange = cascadeSize * 0.05;
 
-        float blend = smoothstep(
-            splitFar - blendRange,
-            splitFar,
-            depthValue
-        );
+        float blend = smoothstep(splitFar - blendRange, splitFar, depthValue);
 
         float shadow1 = SampleShadow(layer + 1, fragPosWorldSpace, normal, bias);
         shadow = mix(shadow0, shadow1, blend);
@@ -306,6 +297,15 @@ void main()
     vec3 R = reflect(-V, N); 
 
     vec3 albedo = texture(gAlbedoAO, TexCoords).rgb;
+    
+    vec2 terrainData = texture(gTypeSlope, TexCoords).rg;
+    float slopeFactor = clamp(terrainData.g, 0.4, 1.0);
+    float terrainMask = terrainData.r;
+
+    slopeFactor = pow(slopeFactor, 1.3);
+
+    albedo *= mix(1.0, slopeFactor, terrainMask);
+
     float ao = texture(gAlbedoAO, TexCoords).a;
     float roughness = clamp(texture(gRoughMetal, TexCoords).r, 0.04, 1.0);
     float metallic = texture(gRoughMetal, TexCoords).g;
@@ -341,8 +341,9 @@ void main()
     vec3 prefilteredColor = textureLod(prefilterMap, R, roughness * maxMip).rgb;
     vec2 brdf = texture(brdfLUT, vec2(max(dot(N, V), 0.0), roughness)).rg;
     vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+    float ssaoFactor = texture(ssao, TexCoords).r;
 
-    vec3 ambient = (kD * diffuse + specular) * ao;
+    vec3 ambient = (kD * diffuse + specular) * ao * ssaoFactor;
 
     vec3 color = ambient + Lo;
 
@@ -351,6 +352,6 @@ void main()
     color = pow(color, vec3(1.0/2.2));
     
     FragColor = vec4(color, 1.0);
-    //float d = texture(shadowMap, vec3(TexCoords, 0)).r;
-    //FragColor = vec4(vec3(d), 1.0);
+
+   // FragColor = vec4(texture(gTypeSlope, TexCoords).ggg, 1.0);
 }

@@ -50,14 +50,14 @@ void Camera::Update(glm::vec3 &targetPos, float dt){
     cameraUp    = glm::normalize(glm::cross(cameraRight, cameraFront)); 
 
     // zoom when the pitch angle is low
-    // if(pitch > 10.0f)
-    // {
-    //     fov = glm::mix(fov, 25.0f, dt * 6.0f);
-    // } 
-    // else 
-    // {
-    //     fov = glm::mix(fov, targetFov, dt * 6.0f);
-    // }
+    if(pitch > 10.0f)
+    {
+        fov = glm::mix(fov, 25.0f, dt * 6.0f);
+    } 
+    else 
+    {
+        fov = glm::mix(fov, targetFov, dt * 6.0f);
+    }
 }
 
 glm::mat4 Camera::GetViewMatrix(){

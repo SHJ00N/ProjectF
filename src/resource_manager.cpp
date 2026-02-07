@@ -11,7 +11,8 @@ std::map<std::string, Texture2D>    ResourceManager::Textures;
 std::map<std::string, Shader>       ResourceManager::Shaders;
 std::map<std::string, Model>        ResourceManager::Models;
 std::map<std::string, Animation>    ResourceManager::Animations;
-std::map<std::string, Terrain>      ResourceManager::Terrains;
+std::map<std::string, TerrainTexture> ResourceManager::TerrainTextures;
+
 
 Shader ResourceManager::LoadShader(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile, const char *tcShaderFile, const char *teShaderFile, std::string name)
 {
@@ -61,16 +62,16 @@ Animation& ResourceManager::GetAnimation(std::string name)
     return Animations[name];
 }
 
-Terrain ResourceManager::LoadTerrain(const char *diffuseFile, const char *heightFile, const char *normalFile, const char *roughFile, std::string name, float heightScale, float worldScale, unsigned int rez)
+TerrainTexture ResourceManager::LoadTerrainTexture(const char *diffuseFile, const char *normalFile, const char *roughFile, std::string name, bool gamma)
 {
-    if(Terrains.find(name) == Terrains.end())
-        Terrains[name] = loadTerrainFromFile(diffuseFile, heightFile, normalFile, roughFile, heightScale, worldScale, rez);
-    return Terrains[name];
+    if(TerrainTextures.find(name) == TerrainTextures.end())
+        TerrainTextures[name] = loadTerrainTextureFromFile(diffuseFile, normalFile, roughFile, gamma);
+    return TerrainTextures[name];
 }
 
-Terrain& ResourceManager::GetTerrain(std::string name)
+TerrainTexture& ResourceManager::GetTerrainTexture(std::string name)
 {
-    return Terrains[name];
+    return TerrainTextures[name];
 }
 
 void ResourceManager::Clear()
@@ -86,15 +87,15 @@ void ResourceManager::Clear()
         iter.second.Clear();
     // delete all animations
     Animations.clear();
-    // delete all terrains
-    for (auto iter : Terrains)
+    // delet all terrain texture
+    for (auto iter : TerrainTextures)
         iter.second.Clear();
 
     // clear maps
     Shaders.clear();
     Textures.clear();
     Models.clear();
-    Terrains.clear();
+    TerrainTextures.clear();
 }
 
 Shader ResourceManager::loadShaderFromFile(const char *vShaderFile, const char *fShaderFile, const char *gShaderFile, const char *tcShaderFile, const char *teShaderFile)
@@ -197,9 +198,8 @@ Animation ResourceManager::loadAnimationFromFile(const char *file, Model &model)
     return animation;
 }
 
-Terrain ResourceManager::loadTerrainFromFile(const char *diffuseFile, const char *heightFile, const char *normalFile, const char *roughFile, float heightScale, float worldScale, unsigned int rez)
+TerrainTexture ResourceManager::loadTerrainTextureFromFile(const char *diffuseFile, const char *normalFile, const char *roughFile, bool gamma)
 {
-    // create terrain object
-    Terrain terrain(diffuseFile, heightFile, normalFile, roughFile, heightScale, worldScale, rez);
-    return terrain;
+    TerrainTexture terrainTexture(diffuseFile, normalFile, roughFile, gamma);
+    return terrainTexture;
 }

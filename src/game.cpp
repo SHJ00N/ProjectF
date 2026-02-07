@@ -1,7 +1,7 @@
 #include "game.h"
 #include "resource_manager.h"
-#include "game_play_scene.h"
-#include "render_system.h"
+#include "scene/game_play_scene.h"
+#include "render/render_system.h"
 
 RenderSystem *renderSystem;
 

@@ -15,7 +15,13 @@
                 
                 "${workspaceFolder}\\src\\*.cpp",
                 "${workspaceFolder}\\src\\*.c",
-
+                "${workspaceFolder}\\src\\animation\\*.cpp",
+                "${workspaceFolder}\\src\\model\\*.cpp",
+                "${workspaceFolder}\\src\\object\\*.cpp",
+                "${workspaceFolder}\\src\\render\\*.cpp",
+                "${workspaceFolder}\\src\\scene\\*.cpp",
+                "${workspaceFolder}\\src\\world\\*.cpp",
+                
                 "/Fo${workspaceFolder}\\build\\obj\\",
                 "/Fd${workspaceFolder}\\build\\pdb\\ProjectF.pdb",
                 "/Fe${workspaceFolder}\\build\\bin\\ProjectF.exe",
