@@ -1,10 +1,10 @@
 #pragma once
 
 #include "shader.h"
-#include "transform.h"
 
 class Model;
 class Animator;
+class Transform;
 
 class SkeletalMeshRenderer
 {

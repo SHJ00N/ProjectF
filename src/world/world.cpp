@@ -19,7 +19,7 @@ World::World(const std::string &heightMapPath, float worldScale, float heightSca
 
     // allocate ptr
     m_terrain = std::make_unique<Terrain>(m_worldScaleInfo, m_heightMapData);
-    m_chunkManager = std::make_unique<ChunkManager>(m_worldChunkInfo);
+    m_chunkManager = std::make_unique<ChunkManager>(m_worldChunkInfo, m_heightMapData, heightScale);
 }
 
 float World::GetWorldHeight(float worldX, float worldZ) const

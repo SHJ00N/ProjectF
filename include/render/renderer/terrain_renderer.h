@@ -13,7 +13,7 @@ class TerrainRenderer
 public:
     TerrainRenderer(Shader &shader, Shader &shadowShader, World &world, TerrainTexture &terrainTexture);
 
-    void Render() const;
+    void Render(const struct Frustum &frustum) const;
     void RenderShadow() const;
 
 private:

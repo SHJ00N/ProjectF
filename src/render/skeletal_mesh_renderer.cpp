@@ -2,6 +2,7 @@
 #include "resource_manager.h"
 #include "model/model.h"
 #include "animation/animator.h"
+#include "object/transform.h"
 
 SkeletalMeshRenderer::SkeletalMeshRenderer()
 {

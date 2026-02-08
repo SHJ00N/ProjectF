@@ -30,5 +30,6 @@ public:
 private:
     unsigned int m_gBuffer;
     unsigned int m_gDepth, m_gNormal, m_gAlbedoAO, m_gRoughMetal, m_gTypeSlope; // ARM : ambient occlusion, roughness, metallic
+    unsigned int m_width, m_height;
     GBufferTextures m_totalData;
 };

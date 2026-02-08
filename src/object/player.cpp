@@ -1,20 +1,18 @@
 #include "object/player.h"
 #include "world/world.h"
+#include "frustum.h"
 
 float NormalizeAngle(float angle);
 
 #pragma region lifecycle
-Player::Player() : Speed(PLAYER_SPEED)
+Player::Player(Model &model, Shader &shader, glm::vec3 position, glm::vec3 size, glm::vec3 rotation, glm::vec2 velocity) : Speed(PLAYER_SPEED), m_model(model), m_shader(shader)
 {
-}
-
-Player::Player(Model &model, Shader &shader, glm::vec3 position, glm::vec3 size, glm::vec3 rotation, glm::vec2 velocity) : Speed(PLAYER_SPEED)
-{
-    ObjectTransform.position = position;
-    ObjectTransform.scale = size;
-    ObjectTransform.rotation = rotation;
-    m_model = &model;
-    m_shader = &shader;
+    // set transform info
+    transform.SetLocalPosition(position);
+    transform.SetLocalScale(size);
+    transform.SetLocalRotation(rotation);
+    // set collider
+    m_collider = std::make_unique<AABB>(m_model);
 }
 
 #pragma endregion
@@ -26,16 +24,29 @@ void Player::Update(float dt)
     UpdateAnimation(dt);
     // update height based on terrain
     updateHeight(dt);
+
+    if (transform.IsDirty()) transform.ComputeModelMatrix();
 }
 
-void Player::Render()
+void Player::Render(const Frustum &frustum)
 {
-    m_renderer.Draw(*m_shader, ObjectTransform, *m_model, m_animator3D);
+    // inside frsutum
+    if (m_collider->isOnFrustum(frustum, transform))
+    {
+        m_renderer.Draw(m_shader, transform, m_model, m_animator3D);
+    }
+
+    // draw children
+    for (auto&& child : children)
+    {
+        if (auto* renderable = dynamic_cast<Renderable*>(child.get()))
+            renderable->Render(frustum);
+    }
 }
 
 void Player::RenderShadow()
 {
-    m_renderer.DrawShadow(ObjectTransform, *m_model, m_animator3D);
+    m_renderer.DrawShadow(transform, m_model, m_animator3D);
 }
 void Player::UpdateAnimation(float dt)
 {
@@ -48,7 +59,9 @@ void Player::SetAnimation(Animation* animation)
 
 void Player::updateHeight(float dt)
 {
-    ObjectTransform.position.y = m_worldHeight;
+    glm::vec3 localPos = transform.GetLocalPosition();
+    localPos.y = m_worldHeight;
+    transform.SetLocalPosition(localPos);
 }
 
 #pragma endregion
@@ -75,7 +88,10 @@ void Player::Move(Camera_Movement direction, Camera &camera, World &world, float
     moveDir = glm::normalize(moveDir);
 
     // project moveDir to ground normal
-    glm::vec3 groundNormal = world.GetWorldNormal(ObjectTransform.position.x, ObjectTransform.position.z);
+    if (transform.IsDirty()) transform.ComputeModelMatrix();
+
+    glm::vec3 worldPostion = transform.GetGlobalPosition();
+    glm::vec3 groundNormal = world.GetWorldNormal(worldPostion.x, worldPostion.z);
     glm::vec3 projectedMove = moveDir - groundNormal * glm::dot(moveDir, groundNormal);
     projectedMove = glm::normalize(projectedMove);
 
@@ -85,13 +101,20 @@ void Player::Move(Camera_Movement direction, Camera &camera, World &world, float
     else camera.targetDistance = NORMAL_DISTANCE;
 
     // result of atan2 is radians, convert radinas to degrees
+    glm::vec3 localRot = transform.GetLocalRotation();
+
     float targetYaw = glm::degrees(atan2(projectedMove.x, projectedMove.z));
-    float delta = NormalizeAngle(targetYaw - ObjectTransform.rotation.y);
-    ObjectTransform.rotation.y += delta * dt * 10.0f;
+    float delta = NormalizeAngle(targetYaw - localRot.y);
+
+    localRot.y += delta * dt * 10.0f;
+    transform.SetLocalRotation(localRot);
 
     // move
-    ObjectTransform.position += projectedMove * velocity;
-    m_worldHeight = world.GetWorldHeight(ObjectTransform.position.x, ObjectTransform.position.z);
+    glm::vec3 localPosition = transform.GetLocalPosition();
+    localPosition += projectedMove * velocity;
+    transform.SetLocalPosition(localPosition);
+    // set y position
+    m_worldHeight = world.GetWorldHeight(transform.GetGlobalPosition().x, transform.GetGlobalPosition().z);
 }
 
 float NormalizeAngle(float angle)

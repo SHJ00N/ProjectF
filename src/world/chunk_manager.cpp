@@ -1,6 +1,7 @@
 #include "world/chunk_manager.h"
 
-ChunkManager::ChunkManager(WorldChunkInfo &worldChunkInfo) : m_worldChunkInfo(worldChunkInfo)
+ChunkManager::ChunkManager(WorldChunkInfo &worldChunkInfo, HeightMapData &heightMapdata, float heightScale) 
+: m_worldChunkInfo(worldChunkInfo), m_heightMapData(heightMapdata), m_heightScale(heightScale)
 {
     m_lastChunkPos.x = 0;
     m_lastChunkPos.z = 0;
@@ -60,6 +61,7 @@ void ChunkManager::createChunk(const ChunkCoord &chunkCoord)
     // create chunk
     std::unique_ptr<Chunk> chunk = std::make_unique<Chunk>(chunkCoord.x, chunkCoord.z, m_worldChunkInfo.chunkRez, m_worldChunkInfo.chunkWorldSize);
     chunk->BuildMesh();
+    chunk->BuildBound(m_heightMapData, m_heightScale);
     m_chunks.emplace(chunkCoord, std::move(chunk));
 }
 

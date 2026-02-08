@@ -47,7 +47,7 @@ void GamePlayScene::Init()
     // load terrain texture
     ResourceManager::LoadTerrainTexture("resources/texture/Diffuse_16BIT_PNG.png", "resources/texture/CombinedNormal_8BIT_PNG.png", "resources/texture/Roughness_16BIT_PNG.png", "snowField", true);
     // create world and renderer
-    world = new World("resources/texture/Heightmap_16BIT_PNG.png", 1.0f, 640.0f, 4, 128.0f, 20);
+    world = new World("resources/texture/Heightmap_16BIT_PNG.png", 1.0f, 640.0f, 4, 128.0f, 21);
     terrainRenderer = new TerrainRenderer(ResourceManager::GetShader("terrainShader"), ResourceManager::GetShader("terrainShadow"), *world, ResourceManager::GetTerrainTexture("snowField"));
 
     // load models
@@ -68,7 +68,7 @@ void GamePlayScene::Init()
     renderables.push_back(player); // add to renderables list
     gameObjects.push_back(player); // add to game objects list
 
-    boneDemoObj = new BoneDemoObj(ResourceManager::GetModel("knight"), ResourceManager::GetShader("staticModel"), glm::vec3(0.0f), glm::vec3(0.01f), glm::vec3(270.0f, 0.0f, 90.0f));
+    boneDemoObj = new BoneDemoObj(ResourceManager::GetModel("knight"), ResourceManager::GetShader("staticModel"), glm::vec3(0.0f), glm::vec3(0.01f), glm::vec3(270.0f, 90.0f, 0.0f));
     renderables.push_back(boneDemoObj); // add to renderables list
     gameObjects.push_back(boneDemoObj); // add to game objects list
 
@@ -77,7 +77,10 @@ void GamePlayScene::Init()
 
 void GamePlayScene::Start()
 {
-    player->SetWorldHeight(world->GetWorldHeight(MainCamera->cameraPos.x, MainCamera->cameraPos.z));
+    glm::vec3 playerWorldPos = player->transform.GetGlobalPosition();
+    player->SetWorldHeight(world->GetWorldHeight(playerWorldPos.x, playerWorldPos.z));
+    glm::vec3 demoWorldPos = boneDemoObj->transform.GetGlobalPosition();
+    boneDemoObj->SetWorldHeight(world->GetWorldHeight(demoWorldPos.x, demoWorldPos.z));
 }
 
 void GamePlayScene::Update(float dt)
@@ -90,7 +93,7 @@ void GamePlayScene::Update(float dt)
         object->Update(dt);
     }
     // update camera
-    MainCamera->Update(player->ObjectTransform.position, dt);
+    MainCamera->Update(player->transform.GetGlobalPosition(), dt);
     glm::mat4 projection = glm::perspective(glm::radians(MainCamera->fov), (float)Width / (float)Height, MainCamera->nearPlane, MainCamera->farPlane);
     glm::mat4 view = MainCamera->GetViewMatrix();
     ResourceManager::GetShader("terrainShader").Use().SetMatrix4("projection", projection);

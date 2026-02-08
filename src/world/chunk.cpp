@@ -1,5 +1,7 @@
 #include "world/chunk.h"
 #include "shader.h"
+#include "frustum.h"
+#include "world/world_structures.h"
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -8,6 +10,9 @@
 
 Chunk::Chunk(int chunkX, int chunkZ, int chunkRez, float chunkWorldSize) : m_chunkX(chunkX), m_chunkZ(chunkZ), m_chunkRez(chunkRez), m_chunkWorldSize(chunkWorldSize)
 {
+    // set chunk position
+    glm::vec3 position = glm::vec3(m_chunkX * m_chunkWorldSize, 0.0f, m_chunkZ * m_chunkWorldSize);
+    transform.SetLocalPosition(position);
 }
 
 Chunk::~Chunk()
@@ -63,27 +68,62 @@ void Chunk::BuildMesh()
     setUpMesh();
 }
 
-void Chunk::Render(Shader &shader)
+void Chunk::BuildBound(const HeightMapData &data, const float heightScale)
 {
-    // set uniform
-    glm::vec3 chunkWorldCoord = glm::vec3(m_chunkX * m_chunkWorldSize, 0.0f, m_chunkZ * m_chunkWorldSize);
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, chunkWorldCoord);
-    shader.SetMatrix4("model", model);
+    unsigned short minH = std::numeric_limits<unsigned short>::max();
+    unsigned short maxH = 0;
 
-    glBindVertexArray(m_VAO);
-    glDrawElements(GL_PATCHES, m_indices.size(), GL_UNSIGNED_INT, 0);
+    // calculate min, max height
+    for(int i = 0; i < m_chunkWorldSize; ++i)
+    {
+        for(int j = 0; j < m_chunkWorldSize; ++j)
+        {
+            int x = m_chunkX * m_chunkWorldSize + j;
+            int z = m_chunkZ * m_chunkWorldSize + i;
 
-    glBindVertexArray(0);
+            // check out of range
+            if(x >= 0 && x < data.heightMapWidth && z >= 0 && z < data.heightMapHeight)
+            {
+                unsigned short height = data.heights[z * data.heightMapWidth + x];
+                
+                minH = std::min(minH, height);
+                maxH = std::max(maxH, height);
+            }
+        }
+    }
+
+    // convert to min, max height of real world
+    float minY = static_cast<float>(minH) / 65535.0f * heightScale;
+    float maxY = static_cast<float>(maxH) / 65535.0f * heightScale;
+
+    glm::vec3 center = glm::vec3(m_chunkWorldSize * 0.5f, (minY + maxY) * 0.5f, m_chunkWorldSize * 0.5f);
+
+    // create bound
+    m_chunkBound = std::make_unique<AABB>(center, m_chunkWorldSize * 0.5f, (maxY - minY) * 0.5f, m_chunkWorldSize * 0.5f);
+}
+
+void Chunk::Render(Shader &shader, const Frustum &frustum)
+{
+    // update transform
+    if(transform.IsDirty()) transform.ComputeModelMatrix();
+    // frustum culling
+    if(m_chunkBound->isOnFrustum(frustum, transform))
+    {
+        // set uniform
+        shader.SetMatrix4("model", transform.GetModelMatrix());
+
+        glBindVertexArray(m_VAO);
+        glDrawElements(GL_PATCHES, m_indices.size(), GL_UNSIGNED_INT, 0);
+
+        glBindVertexArray(0);
+    }   
 }
 
 void Chunk::RenderShadow(Shader &shader)
 {
     // set model matrix
-    glm::vec3 chunkWorldCoord = glm::vec3(m_chunkX * m_chunkWorldSize, 0.0f, m_chunkZ * m_chunkWorldSize);
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, chunkWorldCoord);
-    shader.SetMatrix4("model", model);
+    if(transform.IsDirty()) transform.ComputeModelMatrix();
+    shader.SetMatrix4("model", transform.GetModelMatrix());
 
     glBindVertexArray(m_VAO);
     glDrawElements(GL_PATCHES, m_indices.size(), GL_UNSIGNED_INT, 0);

@@ -1,14 +1,13 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include "transform.h"
+#include "object/entity.h"
 
-class GameObject
+class GameObject : public Entity
 {
 public:
     // object state
     glm::vec2 Velocity;
-    Transform ObjectTransform;
     bool Destroyed;
     
     virtual void Update(float dt) = 0;

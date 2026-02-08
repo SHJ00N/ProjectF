@@ -12,7 +12,7 @@ class ChunkManager
 {
 public:
     // constructor
-    ChunkManager(WorldChunkInfo &worldChunkInfo);
+    ChunkManager(WorldChunkInfo &worldChunkInfo, HeightMapData &heightMapdata, float heightScale);
     // update active chunks
     void Update(const glm::vec3 &cameraPos);
     // get current active chunk list
@@ -20,6 +20,8 @@ public:
 
 private:
     WorldChunkInfo &m_worldChunkInfo;
+    HeightMapData &m_heightMapData;
+    float m_heightScale;
     ChunkCoord m_lastChunkPos;  // last camera position in chunk space
     // current generated chunks
     std::unordered_map<ChunkCoord, std::unique_ptr<Chunk>, ChunkCoordHash> m_chunks;

@@ -30,7 +30,7 @@ Camera::Camera(float posX, float posY, float posZ, float upX, float upY, float u
     farPlane = FAR_PLANE;
 }
 
-void Camera::Update(glm::vec3 &targetPos, float dt){
+void Camera::Update(const glm::vec3 &targetPos, float dt){
     glm::vec3 pivot = targetPos + glm::vec3(0.0f, 1.5f, 0.0f);
 
     float finalYaw = yaw + followYawOffset;
@@ -50,14 +50,15 @@ void Camera::Update(glm::vec3 &targetPos, float dt){
     cameraUp    = glm::normalize(glm::cross(cameraRight, cameraFront)); 
 
     // zoom when the pitch angle is low
-    if(pitch > 10.0f)
-    {
-        fov = glm::mix(fov, 25.0f, dt * 6.0f);
-    } 
-    else 
-    {
-        fov = glm::mix(fov, targetFov, dt * 6.0f);
-    }
+    // if(pitch > 10.0f)
+    // {
+    //     fov = glm::mix(fov, 25.0f, dt * 6.0f);
+    // } 
+    // else 
+    // {
+    //     fov = glm::mix(fov, targetFov, dt * 6.0f);
+    // }
+    fov = glm::mix(fov, targetFov, dt * 6.0f);
 }
 
 glm::mat4 Camera::GetViewMatrix(){
@@ -82,4 +83,20 @@ void Camera::ProcessMouseScroll(float yoffset){
 
     if(targetFov < 25.0f) targetFov = 25.0f;
     if(targetFov > 45.0f) targetFov = 45.0f;
+}
+
+Frustum Camera::GetCameraFrustum(float width, float height)
+{
+    float aspect = width / height;
+	const float halfVSide = farPlane * tanf(fov * 0.5f);
+	const float halfHSide = halfVSide * aspect;
+	const glm::vec3 frontMultFar = farPlane * cameraFront;
+
+	frustum.nearFace = { cameraPos + nearPlane * cameraFront, cameraFront };
+	frustum.farFace = { cameraPos + frontMultFar, -cameraFront };
+	frustum.rightFace = { cameraPos, glm::cross(frontMultFar - cameraRight * halfHSide, cameraUp) };
+	frustum.leftFace = { cameraPos, glm::cross(cameraUp, frontMultFar + cameraRight * halfHSide) };
+	frustum.topFace = { cameraPos, glm::cross(cameraRight, frontMultFar - cameraUp * halfVSide) };
+	frustum.bottomFace = { cameraPos, glm::cross(frontMultFar + cameraUp * halfVSide, cameraRight) };
+	return frustum;
 }

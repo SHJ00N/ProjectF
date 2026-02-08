@@ -2,11 +2,12 @@
 #include "object/interface/renderable.h"
 #include "render/renderer/terrain_renderer.h"
 #include "scene/scene.h"
+#include "frustum.h"
 
 #include <iostream>
 
 #pragma region lifecycle
-GeometryPass::GeometryPass(unsigned int width, unsigned int height)
+GeometryPass::GeometryPass(unsigned int width, unsigned int height) : m_width(width), m_height(height)
 {
     // frame buffer
     glGenFramebuffers(1, &m_gBuffer);
@@ -95,12 +96,14 @@ void GeometryPass::Render(Scene *scene)
 {
     // start geometry pass
     Configure();
-    // render world
-    if(scene->GetTerrainRenderer()) scene->GetTerrainRenderer()->Render(); 
+    // camera frustum
+    Frustum frustum = scene->GetCamera()->GetCameraFrustum((float)m_width, (float)m_height);
     // render all scene meshes
+    if(scene->GetTerrainRenderer()) scene->GetTerrainRenderer()->Render(frustum); 
+
     for(const auto &renderableObj : scene->GetRenderables())
     {
-        renderableObj->Render();
+        renderableObj->Render(frustum);
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

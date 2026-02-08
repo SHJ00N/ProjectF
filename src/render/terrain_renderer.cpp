@@ -3,6 +3,9 @@
 #include "world/world.h"
 #include "render/terrain_texture.h"
 #include "world/chunk.h"
+#include "frustum.h"
+
+#include <iostream>
 
 TerrainRenderer::TerrainRenderer(Shader &shader, Shader &shadowShader, World &world, TerrainTexture &terrainTexture)
 : m_shader(shader), m_shadowShader(shadowShader), m_world(world), m_terrainTexture(terrainTexture)
@@ -10,7 +13,7 @@ TerrainRenderer::TerrainRenderer(Shader &shader, Shader &shadowShader, World &wo
     m_slopeLighter = std::make_unique<SlopeLighterTexture>(world.GetHeightMapData(), world.GetHeightScale());
 }
 
-void TerrainRenderer::Render() const
+void TerrainRenderer::Render(const Frustum &frustum) const
 {
     m_shader.Use();
     m_shader.SetInteger("heightMap", 0);
@@ -36,7 +39,7 @@ void TerrainRenderer::Render() const
 
     for(const auto &chunk : m_world.GetChunkManager()->GetChunkList())
     {
-        chunk->Render(m_shader);
+        chunk->Render(m_shader, frustum);
     }
 }
 

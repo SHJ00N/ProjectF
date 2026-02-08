@@ -5,6 +5,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "frustum.h"
+
 enum Camera_Movement{
     LEFT, RIGHT, FORWARD, BACKWARD
 };
@@ -16,7 +18,7 @@ const float FOV = 45.0f;
 const float NORMAL_DISTANCE = 5.0f;
 const float BACK_DISTANCE = 3.5f;
 const float NEAR_PLANE = 1.0f;
-const float FAR_PLANE = 3000.0f;
+const float FAR_PLANE = 2500.0f;
 
 class Camera
 {
@@ -39,14 +41,18 @@ public:
     float nearPlane;
     float farPlane;
 
+    Frustum frustum;
+
     Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH);
     Camera(float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw = YAW, float pitch = PITCH);
 
-    void Update(glm::vec3 &targetPos,float dt);
+    void Update(const glm::vec3 &targetPos, float dt);
     glm::mat4 GetViewMatrix();
     glm::mat4 GetProjectionMatrix(float width, float height);
+    Frustum GetCameraFrustum(float width, float height);
 
     void ProcessMouseMovement(float xoffset, float yoffset);
     void ProcessMouseScroll(float yoffset);
 };
+
 #endif
