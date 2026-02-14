@@ -9,6 +9,7 @@ StaticMeshRenderer::StaticMeshRenderer()
 
 void StaticMeshRenderer::Draw(Shader &shader, Transform &transform, Model &model)
 {
+    if (transform.IsDirty()) transform.ComputeModelMatrix();
     // create transformation matrix
     glm::mat4 modelMatrix = transform.GetModelMatrix();
 
@@ -25,6 +26,7 @@ void StaticMeshRenderer::Draw(Shader &shader, Transform &transform, Model &model
 
 void StaticMeshRenderer::DrawShadow(Transform &transform, Model &model)
 {
+    if (transform.IsDirty()) transform.ComputeModelMatrix();
     Shader &shadowShader = ResourceManager::GetShader("staticMeshCSMShader");
     // create transformation matrix
     glm::mat4 modelMatrix = transform.GetModelMatrix();

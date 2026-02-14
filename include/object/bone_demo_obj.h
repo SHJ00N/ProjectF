@@ -21,7 +21,7 @@ public:
     void Update(float dt) override;
     // renderable override
     void Render(const struct Frustum &frustum) override;
-    void RenderShadow() override;
+    void RenderShadow(const struct Frustum& frustum) override;
 
     // setters
     void SetWorldHeight(float height) { m_worldHeight = height; }

@@ -1,6 +1,7 @@
 #include "object/player.h"
 #include "world/world.h"
 #include "frustum.h"
+#include "object/weapon.h"
 
 float NormalizeAngle(float angle);
 
@@ -13,6 +14,13 @@ Player::Player(Model &model, Shader &shader, glm::vec3 position, glm::vec3 size,
     transform.SetLocalRotation(rotation);
     // set collider
     m_collider = std::make_unique<AABB>(m_model);
+    // configure soket data
+    soketConfig();
+}
+
+void Player::soketConfig()
+{
+    m_sokets["RightHand"] = 88;
 }
 
 #pragma endregion
@@ -22,12 +30,30 @@ void Player::Update(float dt)
 {
     // update animator
     UpdateAnimation(dt);
+    updateWeaponTransform();
     // update height based on terrain
     updateHeight(dt);
-
-    if (transform.IsDirty()) transform.ComputeModelMatrix();
 }
 
+void Player::UpdateAnimation(float dt)
+{
+    m_animator3D.UpdateAnimation(dt);
+}
+void Player::SetAnimation(Animation* animation)
+{
+    m_animator3D.PlayAnimation(animation);
+}
+
+void Player::updateHeight(float dt)
+{
+    glm::vec3 localPos = transform.GetLocalPosition();
+    localPos.y = m_worldHeight;
+    transform.SetLocalPosition(localPos);
+}
+
+#pragma endregion
+
+#pragma region render
 void Player::Render(const Frustum &frustum)
 {
     // inside frsutum
@@ -44,24 +70,20 @@ void Player::Render(const Frustum &frustum)
     }
 }
 
-void Player::RenderShadow()
+void Player::RenderShadow(const Frustum &frustum)
 {
-    m_renderer.DrawShadow(transform, m_model, m_animator3D);
-}
-void Player::UpdateAnimation(float dt)
-{
-    m_animator3D.UpdateAnimation(dt);
-}
-void Player::SetAnimation(Animation* animation)
-{
-    m_animator3D.PlayAnimation(animation);
-}
+    // inside frsutum
+    if (m_collider->isOnFrustum(frustum, transform))
+    {
+        m_renderer.DrawShadow(transform, m_model, m_animator3D);
+    }
 
-void Player::updateHeight(float dt)
-{
-    glm::vec3 localPos = transform.GetLocalPosition();
-    localPos.y = m_worldHeight;
-    transform.SetLocalPosition(localPos);
+    // draw children
+    for (auto&& child : children)
+    {
+        if (auto* renderable = dynamic_cast<Renderable*>(child.get()))
+            renderable->RenderShadow(frustum);
+    }
 }
 
 #pragma endregion
@@ -112,9 +134,11 @@ void Player::Move(Camera_Movement direction, Camera &camera, World &world, float
     // move
     glm::vec3 localPosition = transform.GetLocalPosition();
     localPosition += projectedMove * velocity;
-    transform.SetLocalPosition(localPosition);
     // set y position
     m_worldHeight = world.GetWorldHeight(transform.GetGlobalPosition().x, transform.GetGlobalPosition().z);
+    localPosition.y = m_worldHeight;
+
+    transform.SetLocalPosition(localPosition);
 }
 
 float NormalizeAngle(float angle)
@@ -122,6 +146,28 @@ float NormalizeAngle(float angle)
     while(angle > 180.0f) angle -= 360.0f;
     while(angle < -180.0f) angle += 360.0f;
     return angle;
+}
+
+#pragma endregion
+
+#pragma region weapon_control
+void Player::AttachWeapon(Weapon *weapon)
+{
+    m_weapon = weapon;
+}
+
+void Player::updateWeaponTransform()
+{
+    const int soket = m_sokets["RightHand"];
+    const auto& bones = m_animator3D.GetGlobalBoneMatrices();
+
+    // bone world matrix
+    glm::mat4 boneModel = transform.GetModelMatrix() * bones[soket];
+    // weapon
+    glm::mat4 weaponLocalMat = m_weapon->transform.GetLocalMatrix();
+    glm::mat4 weaponWorldMat = boneModel * weaponLocalMat;
+
+    m_weapon->transform.SetModelMatrix(weaponWorldMat);
 }
 
 #pragma endregion

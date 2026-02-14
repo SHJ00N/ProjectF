@@ -104,12 +104,15 @@ void CascadedShadowPass::Render(Scene* scene)
 {
     // bind and configure framebuffer
     Configure(scene);
+
+    Frustum frustum = scene->GetCamera()->GetCameraFrustum((float)m_width, (float)m_height);
+
     // render world
     //if(scene->GetTerrainRenderer()) scene->GetTerrainRenderer()->RenderShadow(); 
     // render scene from light's point of view
     for(const auto &renderableObj : scene->GetRenderables())
     {
-        renderableObj->RenderShadow();
+        renderableObj->RenderShadow(frustum);
     }
 
     // reset opengl state

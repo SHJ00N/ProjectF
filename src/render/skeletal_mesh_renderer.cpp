@@ -12,6 +12,8 @@ SkeletalMeshRenderer::SkeletalMeshRenderer()
 
 void SkeletalMeshRenderer::Draw(Shader &shader, Transform &transform, Model &model, Animator &animator)
 {
+    // update transform
+    if (transform.IsDirty()) transform.ComputeModelMatrix();
     // create transformation matrix
     glm::mat4 modelMatrix = transform.GetModelMatrix();
 
@@ -36,6 +38,8 @@ void SkeletalMeshRenderer::Draw(Shader &shader, Transform &transform, Model &mod
 
 void SkeletalMeshRenderer::DrawShadow(Transform &transform, Model &model, Animator &animator)
 {
+    // update transform
+    if (transform.IsDirty()) transform.ComputeModelMatrix();
     // create transformation matrix
     glm::mat4 modelMatrix = transform.GetModelMatrix();
 

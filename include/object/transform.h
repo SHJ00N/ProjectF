@@ -34,11 +34,18 @@ public:
 		m_isDirty = true; 
     }
 
+	void SetModelMatrix(const glm::mat4& newModelMatrix)
+	{
+		m_modelMatrix = newModelMatrix;
+		m_isDirty = false;
+	}
+
     // getter
 	const glm::vec3 GetGlobalPosition() const { return m_modelMatrix[3]; }
 	const glm::vec3& GetLocalPosition() const { return m_position; }
 	const glm::vec3& GetLocalRotation() const { return m_rotation; }
 	const glm::vec3& GetLocalScale() const { return m_scale; }
+	const glm::mat4 GetLocalMatrix() { return getLocalModelMatrix(); }
 	const glm::mat4& GetModelMatrix() const { return m_modelMatrix; }
 	glm::vec3 GetRight() const { return m_modelMatrix[0]; }
 	glm::vec3 GetUp() const { return m_modelMatrix[1]; }

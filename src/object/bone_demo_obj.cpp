@@ -31,7 +31,7 @@ void BoneDemoObj::Render(const struct Frustum& frustum)
     }
 }
 
-void BoneDemoObj::RenderShadow()
+void BoneDemoObj::RenderShadow(const struct Frustum& frustum)
 {
     m_renderer.DrawShadow(transform, m_model);
 }

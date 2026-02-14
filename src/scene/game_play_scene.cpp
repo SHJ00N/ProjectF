@@ -7,6 +7,7 @@
 #include "world/world.h"
 #include "object/player.h"
 #include "object/bone_demo_obj.h"
+#include "object/weapon.h"
 
 GamePlayScene::GamePlayScene(unsigned int width, unsigned int height) : Scene(width, height)
 {
@@ -28,6 +29,7 @@ GamePlayScene::~GamePlayScene()
     delete boneDemoObj;
     delete world;
     delete terrainRenderer;
+    delete sword;
     // delete IBL textures
     IBLtextures.Destroy();
 }
@@ -47,14 +49,15 @@ void GamePlayScene::Init()
     // load terrain texture
     ResourceManager::LoadTerrainTexture("resources/texture/Diffuse_16BIT_PNG.png", "resources/texture/CombinedNormal_8BIT_PNG.png", "resources/texture/Roughness_16BIT_PNG.png", "snowField", true);
     // create world and renderer
-    world = new World("resources/texture/Heightmap_16BIT_PNG.png", 1.0f, 640.0f, 4, 128.0f, 21);
+    world = new World("resources/texture/Heightmap_16BIT_PNG.png", 1.0f, 640.0f, 4, 64.0f, 40);
     terrainRenderer = new TerrainRenderer(ResourceManager::GetShader("terrainShader"), ResourceManager::GetShader("terrainShadow"), *world, ResourceManager::GetTerrainTexture("snowField"));
 
     // load models
     ResourceManager::LoadModel("resources/object/knight2/SKM_DKM_Full.fbx", true, "knight");
+    ResourceManager::LoadModel("resources/object/SM_DKM_Sword.fbx", true, "sword");
     // load animations
-    ResourceManager::LoadAnimation("resources/animation/knight2/Anim_DKM_Idle.fbx", ResourceManager::GetModel("knight"), "knight_idle");
-    ResourceManager::LoadAnimation("resources/animation/knight2/Anim_DKM_Run_Fwd.fbx", ResourceManager::GetModel("knight"), "knight_run");
+    ResourceManager::LoadAnimation("resources/animation/knight2/Anim_DKM_Walk_Alert_Fwd.fbx", ResourceManager::GetModel("knight"), "knight_idle");
+    ResourceManager::LoadAnimation("resources/animation/knight2/Anim_DKM_Attack_03.fbx", ResourceManager::GetModel("knight"), "knight_run");
     // create IBL textures
     IBLtextures = IBLGenerator::GenerateIBLFromHDR("resources/texture/galaxy_hdr.png");
     // create main camera
@@ -67,6 +70,10 @@ void GamePlayScene::Init()
     player->SetAnimation(&ResourceManager::GetAnimation("knight_idle"));
     renderables.push_back(player); // add to renderables list
     gameObjects.push_back(player); // add to game objects list
+
+    sword = new Weapon(ResourceManager::GetModel("sword"), ResourceManager::GetShader("staticModel"), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(90.0f, 0.0f, 0.0f), glm::vec3(1.0f));
+    player->AttachWeapon(sword);
+    renderables.push_back(sword);
 
     boneDemoObj = new BoneDemoObj(ResourceManager::GetModel("knight"), ResourceManager::GetShader("staticModel"), glm::vec3(0.0f), glm::vec3(0.01f), glm::vec3(270.0f, 90.0f, 0.0f));
     renderables.push_back(boneDemoObj); // add to renderables list

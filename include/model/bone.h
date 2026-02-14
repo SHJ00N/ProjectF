@@ -35,6 +35,10 @@ public:
     int GetRotationIndex(float animationTime);
     int GetScaleIndex(float animationTime);
 
+    glm::vec3 GetLocalPosition() const;
+    glm::quat GetLocalRotation() const;
+    glm::vec3 GetLocalScale() const;
+
 private:
     std::vector<KeyPosition> m_Positions;
     std::vector<KeyRotation> m_Rotations;
@@ -43,12 +47,15 @@ private:
     int m_NumRotations;
     int m_NumScalings;
 
+    glm::vec3 m_LocalPosition;
+    glm::quat m_LocalRotation;
+    glm::vec3 m_LocalScale;
     glm::mat4 m_LocalTransform;
     std::string m_Name;
     int m_ID;
 
     float GetScaleFactor(float lastTimeStamp, float nextTimeStamp, float animationTime);
-    glm::mat4 InterpolatePosition(float animationTime);
-    glm::mat4 InterpolateRotation(float animationTime);
-    glm::mat4 InterpolateScaling(float animationTime);
+    glm::vec3 InterpolatePosition(float animationTime);
+    glm::quat InterpolateRotation(float animationTime);
+    glm::vec3 InterpolateScaling(float animationTime);
 };
