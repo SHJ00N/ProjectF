@@ -19,6 +19,7 @@ BloodParticle::~BloodParticle()
 
 void BloodParticle::Init()
 {
+    updateSelfAndChild();
     // calculate initial positions
     std::vector<glm::vec4> positions(m_totalParticles);
     calculatePositions(positions);
@@ -60,6 +61,7 @@ void BloodParticle::Init()
     glVertexAttribDivisor(2, 1);
 
     // set shader's uniform value
+    m_shader.Use();
     m_shader.SetInteger("gDepth", 0);
     m_shader.SetInteger("particleImage", 1);
     m_shader.SetInteger("noiseTexture", 2);
@@ -67,6 +69,9 @@ void BloodParticle::Init()
 
 void BloodParticle::Update(float dt)
 {
+    m_lifeTime -= dt;
+    if(m_lifeTime <= 0.0f) EntityDestroyed = true;
+    
     m_computeShader.Use();
     m_computeShader.SetFloat("dt", dt);
 

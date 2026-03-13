@@ -4,15 +4,19 @@
 #include <GLFW/glfw3.h>
 
 #include <vector>
+#include <memory>
 
 #include "camera.h"
 #include "ibl_generator.h"
+#include "object/entity.h"
+#include "object/game_object.h"
+#include "object/interface/renderable.h"
+#include "object/interface/collidable.h"
+#include "particle/particle_manager.h"
 
-class Renderable;
 class TerrainRenderer;
 class Light;
-class GameObject;
-class Particle;
+class Collidable;
 
 // operator for scene management
 enum class SceneOp { None, Push, Pop };
@@ -34,6 +38,8 @@ public:
     bool MouseButtonLeft;
     bool MouseButtonRight;
     
+    // scene graph
+    std::unique_ptr<Entity> Root;
 
     // constructor(s)
     Scene(){ };
@@ -47,15 +53,22 @@ public:
     virtual void Update(float dt) = 0;
     virtual void ProcessInput(float dt) = 0;
     virtual void End() = 0;
+    void CleanUpLists() 
+    {
+        gameObjects.erase(std::remove_if(gameObjects.begin(), gameObjects.end(), [](GameObject *obj){ return obj->EntityDestroyed; }), gameObjects.end());
+        renderables.erase(std::remove_if(renderables.begin(), renderables.end(), [](Renderable *obj){ return obj->RenderableDestroyed; }), renderables.end());
+        collidables.erase(std::remove_if(collidables.begin(), collidables.end(), [](Collidable *obj){ return obj->CollidableDestroyed; }), collidables.end());
+    }
     
     // getter
     SceneRequest GetSceneRequest() { return Request; }
     Camera* GetCamera() { return MainCamera; }
     std::vector<Light*> GetLights() { return Lights; }
+    ParticleManager* GetParticleManager() { return particleManager; }
     RenderType GetRenderType() { return renderType; }
     IBLData GetIBLData() { return IBLtextures; }
     std::vector<Renderable*> GetRenderables() { return renderables; }
-    std::vector<Particle*> GetParticles() { return particles; }
+    std::vector<Collidable*> GetCollidables() { return collidables; }
     TerrainRenderer* GetTerrainRenderer() { return terrainRenderer; }
     // setter
     void RequestClear() { Request = {SceneOp::None, {}}; }
@@ -68,7 +81,7 @@ protected:
     // lights
     std::vector<Light*> Lights;
     // particles
-    std::vector<Particle*> particles;
+    ParticleManager* particleManager;
     // render type
     RenderType renderType;
     // IBL data
@@ -77,6 +90,8 @@ protected:
     std::vector<Renderable*> renderables;
     // object members
     std::vector<GameObject*> gameObjects;
+    // collidable members for debug
+    std::vector<Collidable*> collidables;
     // terrain renderer
     TerrainRenderer *terrainRenderer = nullptr;
     // scene request functions

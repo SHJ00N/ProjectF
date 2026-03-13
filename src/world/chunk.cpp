@@ -1,7 +1,6 @@
 #include "world/chunk.h"
 #include "shader.h"
 #include "frustum.h"
-#include "world/world_structures.h"
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -20,6 +19,16 @@ Chunk::~Chunk()
     glDeleteBuffers(1, &m_VBO);
     glDeleteBuffers(1, &m_EBO);
     glDeleteVertexArrays(1, &m_VAO);
+}
+
+ChunkCoord Chunk::GetChunkCoord() const
+{
+    return {m_chunkX, m_chunkZ};
+}
+
+std::vector<Collider*>& Chunk::GetColliders()
+{
+    return m_colliders;
 }
 
 void Chunk::BuildMesh()
@@ -100,6 +109,22 @@ void Chunk::BuildBound(const HeightMapData &data, const float heightScale)
 
     // create bound
     m_chunkBound = std::make_unique<AABB>(center, m_chunkWorldSize * 0.5f, (maxY - minY) * 0.5f, m_chunkWorldSize * 0.5f);
+}
+
+void Chunk::RegistCollider(Collider *collider)
+{
+    m_colliders.push_back(collider);
+}
+
+void Chunk::RemoveCollider(Collider *collider)
+{
+    auto it = std::find(m_colliders.begin(), m_colliders.end(), collider);
+
+    if(it != m_colliders.end())
+    {
+        *it = m_colliders.back();
+        m_colliders.pop_back();
+    }
 }
 
 void Chunk::Render(Shader &shader, const Frustum &frustum)

@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <memory>
+#include <algorithm>
 
 #include "object/transform.h"
 
@@ -17,6 +18,9 @@ public:
 	//Space information
 	Transform transform;
 
+	// Entity state
+	bool EntityDestroyed = false;
+
 	template<typename T, typename... Args>
 	T& addChild(Args&&... args)
 	{
@@ -27,6 +31,8 @@ public:
 
 		T& ref = *child;
 		children.emplace_back(std::move(child));
+
+		ref.updateSelfAndChild();
 		return ref;
 	}
 
@@ -56,5 +62,18 @@ public:
 		{
 			child->forceUpdateSelfAndChild();
 		}
+	}
+
+	void cleanupDestroyed()
+	{
+		for(auto& child : children)
+		{
+			child->cleanupDestroyed();
+		}
+		
+		children.erase(
+			std::remove_if(children.begin(), children.end(), [this](const std::unique_ptr<Entity>& e){ return e->EntityDestroyed; }), 
+			children.end()
+		);
 	}
 };

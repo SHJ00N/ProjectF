@@ -4,11 +4,13 @@
 #include <memory>
 #include "object/collider/aabb.h"
 #include "object/transform.h"
+#include "world/world_structures.h"
 
 const unsigned int NUM_PATCH_PTS = 4;
 const unsigned int NUM_VERTICES_ATTRIBUTE = 5; // x, y, z, u, v
 
 class Shader;
+class Collider;
 
 class Chunk
 {
@@ -18,10 +20,17 @@ public:
     Chunk(int chunkX, int chunkZ, int chunkRez, float chunkWorldSize);
     ~Chunk();
 
+    // getter
+    ChunkCoord GetChunkCoord() const;
+    std::vector<Collider*>& GetColliders();
+
     // generate vertices
     void BuildMesh();
     // generate bound
     void BuildBound(const struct HeightMapData &data, const float heightScale);
+    // control colliders
+    void RegistCollider(Collider *collider);
+    void RemoveCollider(Collider *collider);
 
     // render function
     void Render(Shader &shader, const struct Frustum &frustum);
@@ -35,6 +44,7 @@ private:
     float m_chunkWorldSize;
     // collider for frustum culling
     std::unique_ptr<AABB> m_chunkBound;
+    std::vector<Collider*> m_colliders;
     // mesh
     std::vector<float> m_vertices;
     std::vector<uint32_t> m_indices;

@@ -19,6 +19,7 @@ struct WorldChunkInfo
     int viewDistance;
     int chunkRez;
     float chunkWorldSize;
+    int physicsRadius;
 };
 
 // chunk struct

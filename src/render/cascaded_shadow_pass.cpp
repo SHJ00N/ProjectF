@@ -46,7 +46,7 @@ CascadedShadowPass::CascadedShadowPass(unsigned int width, unsigned int height)
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
     // create shadow offset texture for PCF
-    m_offsetTexture = new ShadowMapOffsetTexture(8, 3, 0.7f);
+    m_offsetTexture = new ShadowMapOffsetTexture(8, 4, 1.5f);
 }
 
 CascadedShadowPass::~CascadedShadowPass()

@@ -15,8 +15,14 @@ public:
     ChunkManager(WorldChunkInfo &worldChunkInfo, HeightMapData &heightMapdata, float heightScale);
     // update active chunks
     void Update(const glm::vec3 &cameraPos);
-    // get current active chunk list
-    std::vector<Chunk*> GetChunkList() const;
+    void UpdateChunkColliderList(struct BoxCollider &collider);
+    // getter
+    std::vector<Chunk*> GetChunkList() const; // get current active chunk list
+    std::vector<Chunk*> GetPhysicsChunkList() const;
+    Chunk* GetChunk(const glm::vec3 &worldPos) const;
+    Chunk* GetChunk(const ChunkCoord &chunkCoord) const;
+    // transform coord world to chunk space
+    ChunkCoord WorldToChunk(const glm::vec3 &pos) const;
 
 private:
     WorldChunkInfo &m_worldChunkInfo;
@@ -28,6 +34,4 @@ private:
     // chunk lifecycle helper
     void createChunk(const ChunkCoord &chunkCoord);
     void destroyChunk(const ChunkCoord &chunkCoord);
-    // transform coord world to chunk space
-    ChunkCoord worldToChunk(int worldX, int worldZ) const;
 };

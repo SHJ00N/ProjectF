@@ -16,6 +16,7 @@ public:
     void Render(unsigned int depthTexture, int width, int height) final;
 
 private:
+    float m_lifeTime = 1.5f;
     unsigned int m_quadVAO = 0;
     unsigned int m_quadVBO = 0;
 

@@ -5,7 +5,7 @@
 
 #include <iostream>
 
-World::World(const std::string &heightMapPath, float worldScale, float heightScale, int chunkRez, float chunkWorldSize, int viewDistance)
+World::World(const std::string &heightMapPath, float worldScale, float heightScale, int chunkRez, float chunkWorldSize, int viewDistance, int physicsRadius)
 {
     // set world data and chunk data
     m_worldScaleInfo.worldScale = worldScale;
@@ -13,6 +13,7 @@ World::World(const std::string &heightMapPath, float worldScale, float heightSca
     m_worldChunkInfo.chunkRez = chunkRez;
     m_worldChunkInfo.chunkWorldSize = chunkWorldSize;
     m_worldChunkInfo.viewDistance = viewDistance;
+    m_worldChunkInfo.physicsRadius = physicsRadius;
     
     // load height
     m_heightMap = loadHeightMapFromFile(heightMapPath);
@@ -35,6 +36,11 @@ glm::vec3 World::GetWorldNormal(float worldX, float worldZ) const
 void World::Update(const glm::vec3 cameraPos)
 {
     m_chunkManager.get()->Update(cameraPos);
+}
+
+void World::UpdateChunkCollider(BoxCollider &collider)
+{
+    m_chunkManager->UpdateChunkColliderList(collider);
 }
 
 unsigned int World::loadHeightMapFromFile(const std::string &path)

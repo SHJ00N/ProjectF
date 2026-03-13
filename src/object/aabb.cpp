@@ -43,27 +43,7 @@ bool AABB::isOnOrForwardPlane(const Plane &plane) const
 
 bool AABB::isOnFrustum(const Frustum& camFrustum, const Transform& transform) const
 {
-    //Get global scale thanks to our transform
-    const glm::vec3 globalCenter{ transform.GetModelMatrix() * glm::vec4(center, 1.f) };
-
-    // Scaled orientation
-    const glm::vec3 right = transform.GetRight() * extents.x;
-    const glm::vec3 up = transform.GetUp() * extents.y;
-    const glm::vec3 forward = transform.GetForward() * extents.z;
-
-    const float newIi = std::abs(glm::dot(glm::vec3{ 1.f, 0.f, 0.f }, right)) +
-        std::abs(glm::dot(glm::vec3{ 1.f, 0.f, 0.f }, up)) +
-        std::abs(glm::dot(glm::vec3{ 1.f, 0.f, 0.f }, forward));
-
-    const float newIj = std::abs(glm::dot(glm::vec3{ 0.f, 1.f, 0.f }, right)) +
-        std::abs(glm::dot(glm::vec3{ 0.f, 1.f, 0.f }, up)) +
-        std::abs(glm::dot(glm::vec3{ 0.f, 1.f, 0.f }, forward));
-
-    const float newIk = std::abs(glm::dot(glm::vec3{ 0.f, 0.f, 1.f }, right)) +
-        std::abs(glm::dot(glm::vec3{ 0.f, 0.f, 1.f }, up)) +
-        std::abs(glm::dot(glm::vec3{ 0.f, 0.f, 1.f }, forward));
-
-    const AABB globalAABB(globalCenter, newIi, newIj, newIk);
+    const AABB globalAABB = GetGlobalAABB(transform);
 
     return (globalAABB.isOnOrForwardPlane(camFrustum.leftFace) &&
         globalAABB.isOnOrForwardPlane(camFrustum.rightFace) &&
@@ -73,7 +53,17 @@ bool AABB::isOnFrustum(const Frustum& camFrustum, const Transform& transform) co
         globalAABB.isOnOrForwardPlane(camFrustum.farFace));
 };
 
-AABB AABB::GetGlobalAABB(const Transform &transform)
+bool AABB::isIntersectsAABB(const Collider &other) const
+{
+    const AABB &otherAABB = static_cast<const AABB&>(other);
+    return (
+        std::abs(center.x - otherAABB.center.x) <= (extents.x + otherAABB.extents.x) && 
+        std::abs(center.y - otherAABB.center.y) <= (extents.y + otherAABB.extents.y) &&
+        std::abs(center.z - otherAABB.center.z) <= (extents.z + otherAABB.extents.z)
+    );
+}
+
+AABB AABB::GetGlobalAABB(const Transform &transform) const
 {
     //Get global scale thanks to our transform
     const glm::vec3 globalCenter{ transform.GetModelMatrix() * glm::vec4(center, 1.f) };
@@ -95,5 +85,34 @@ AABB AABB::GetGlobalAABB(const Transform &transform)
         std::abs(glm::dot(glm::vec3{ 0.f, 0.f, 1.f }, up)) +
         std::abs(glm::dot(glm::vec3{ 0.f, 0.f, 1.f }, forward));
 
-    return AABB(globalCenter, newIi, newIj, newIk);
+    AABB aabb = AABB(globalCenter, newIi, newIj, newIk);
+    aabb.Owner = this->Owner;
+    return aabb;
+}
+
+void AABB::UpdateGlobalAABB(AABB& out, const Transform &transform) const
+{
+    //Get global scale thanks to our transform
+    const glm::vec3 globalCenter{ transform.GetModelMatrix() * glm::vec4(center, 1.f) };
+
+    // Scaled orientation
+    const glm::vec3 right = transform.GetRight() * extents.x;
+    const glm::vec3 up = transform.GetUp() * extents.y;
+    const glm::vec3 forward = transform.GetForward() * extents.z;
+
+    const float newIi = std::abs(glm::dot(glm::vec3{ 1.f, 0.f, 0.f }, right)) +
+        std::abs(glm::dot(glm::vec3{ 1.f, 0.f, 0.f }, up)) +
+        std::abs(glm::dot(glm::vec3{ 1.f, 0.f, 0.f }, forward));
+
+    const float newIj = std::abs(glm::dot(glm::vec3{ 0.f, 1.f, 0.f }, right)) +
+        std::abs(glm::dot(glm::vec3{ 0.f, 1.f, 0.f }, up)) +
+        std::abs(glm::dot(glm::vec3{ 0.f, 1.f, 0.f }, forward));
+
+    const float newIk = std::abs(glm::dot(glm::vec3{ 0.f, 0.f, 1.f }, right)) +
+        std::abs(glm::dot(glm::vec3{ 0.f, 0.f, 1.f }, up)) +
+        std::abs(glm::dot(glm::vec3{ 0.f, 0.f, 1.f }, forward));
+
+    out.center = globalCenter;
+    out.extents = glm::vec3(newIi, newIj, newIk);
+    out.Owner = this->Owner;
 }

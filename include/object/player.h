@@ -6,8 +6,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/norm.hpp>
 #include <memory>
-#include <string>
-#include <unordered_map>
 
 #include "object/game_object.h"
 #include "camera.h"
@@ -16,7 +14,9 @@
 #include "render/renderer/skeletal_mesh_renderer.h"
 #include "object/interface/animatable.h"
 #include "animation/animator.h"
-#include "object/collider/aabb.h"
+#include "object/collider/box_collider.h"
+#include "object/interface/collidable.h"
+#include "object/interface/socket.h"
 
 class World;
 class Model;
@@ -28,7 +28,8 @@ enum class ActionState
     Attack1,
     Attack2,
     Attack3,
-    Roll
+    Roll,
+    Hit
 };
 enum class MotionState
 {
@@ -40,7 +41,7 @@ enum class MotionState
 const float PLAYER_SPEED = 4.0f;
 const float ACTION_INPUT_BUFFER_TIME = 0.25f; // time window to accept buffered action input
 
-class Player : public GameObject, public Renderable, public Animatable
+class Player : public GameObject, public Renderable, public Animatable, public Collidable, public ISocket
 {
 public:
     float Speed;
@@ -49,28 +50,25 @@ public:
     bool IsRolling = false;
 
     // constructor(s)
-    Player(Model &model, Shader &shader, glm::vec3 position, glm::vec3 size, glm::vec3 rotation = glm::vec3(0.0f), glm::vec2 velocity = glm::vec2(0.0f));
+    Player(Model &model, Shader &shader, glm::vec3 position, glm::vec3 size, glm::vec3 rotation = glm::vec3(0.0f), glm::vec2 velocity = glm::vec2(0.0f), Layer layout = Layer::None);
 
     // override functions
     void Update(const ObjectUpdateContext &context) override;
     // renderable override
     void Render(const struct Frustum &frustum) override;
     void RenderShadow(const struct Frustum& frustum) override;
-    // animatable override
-    void UpdateAnimation(float dt) override;
-    void SetAnimation(Animation* animation, bool force = false) override;
-    void AddAnimation(const std::string &name, Animation *animation) override;
+    // socket override
+    void SocketConfig() override;
 
-    // weapon control
-    void AttachWeapon(Weapon *weapon);
+    // weapon
+    void EquipWeapon(Weapon* weapon);
     
     // player controls
     void RequestMove(const glm::vec3 direction, bool isRunning);
     void RequestAttack();
     void RequestRoll();
+    void RequestHit();
 
-    glm::vec3 GetSoketLocalPosition(const std::string &name);
-    glm::vec3 GetSoketGlobalPosition(const std::string &name);
     MotionState GetMotionState() const;
     ActionState GetActionState() const;
 
@@ -80,11 +78,8 @@ private:
     Animator m_animator3D;
     Shader &m_shader;
     Model &m_model;
-    // attachment
-    std::unordered_map<std::string, int> m_sokets;
-    Weapon *m_weapon = nullptr;
-    // aabb collider
-    std::unique_ptr<AABB> m_collider;
+    // box collider
+    std::unique_ptr<AABB> m_aabb;
     // player control related members
     ActionState m_actionState = ActionState::None;
     MotionState m_motionState = MotionState::Idle;
@@ -99,18 +94,17 @@ private:
     std::unordered_map<ActionState, float> m_actionCancelTable = 
     {
         {ActionState::Attack1, 1.20f},
-        {ActionState::Attack2, 2.0f},
-        {ActionState::Attack3, 2.75f},
         {ActionState::Roll, 1.85f}
-    };    
+    };   
+    
+    // weapon
+    Weapon* m_weapon = nullptr;
+
+    // collider aixs correction
+    glm::vec3 axisFix = glm::vec3(-90.0f, 0.0f, 0.0f);
     
     // private update functions
-    void updateWeaponTransform();
     void updateWorldHeight(const World &world);
-
-    // configure sokets
-    const glm::mat4& getSoketMat(const std::string& name);
-    void soketConfig();
 
     // control functions
     void startAction(ActionState action);
@@ -119,8 +113,7 @@ private:
     void transformFromActionAnimation(float dt);
     void updateMotion();
     void move(Camera &camera, float dt);
-    void attack(float dt);
-    void roll(float dt);
+    void action(float dt);
     void updateAnimation();
     bool canCancelAction() const;
 };

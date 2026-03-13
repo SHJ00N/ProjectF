@@ -185,7 +185,6 @@ vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType type,
             texturesLoaded.push_back(texture);
         }
     }
-    
     return textures;
 }
 

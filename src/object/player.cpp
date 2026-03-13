@@ -7,46 +7,26 @@
 
 float NormalizeAngle(float angle);
 
-Player::Player(Model &model, Shader &shader, glm::vec3 position, glm::vec3 size, glm::vec3 rotation, glm::vec2 velocity) : Speed(PLAYER_SPEED), m_model(model), m_shader(shader)
+Player::Player(Model &model, Shader &shader, glm::vec3 position, glm::vec3 size, glm::vec3 rotation, glm::vec2 velocity, Layer layer) : Speed(PLAYER_SPEED), m_model(model), m_shader(shader)
 {
+    // set layout
+    ObjectLayer = layer;
     // set transform info
     transform.SetLocalPosition(position);
     transform.SetLocalScale(size);
     transform.SetLocalRotation(rotation);
     updateSelfAndChild();
     // create collider
-    m_collider = std::make_unique<AABB>(m_model);
+    m_aabb = std::make_unique<AABB>(m_model);
+    m_aabb->Owner = this;
     // configure soket data
-    soketConfig();
+    InitSocket(&Animator3D, &transform);
 }
 
-#pragma region soket
-void Player::soketConfig()
+void Player::EquipWeapon(Weapon* weapon)
 {
-    m_sokets["RightHand"] = 88;
-    m_sokets["Center"] = 27;
+    m_weapon = weapon;
 }
-
-glm::vec3 Player::GetSoketLocalPosition(const std::string &name)
-{
-    if(m_sokets.find(name) == m_sokets.end()) return glm::vec3(0.0f);
-    return glm::vec3(getSoketMat(name)[3]);
-}
-
-glm::vec3 Player::GetSoketGlobalPosition(const std::string &name)
-{
-    if(m_sokets.find(name) == m_sokets.end()) return glm::vec3(0.0f);
-    glm::mat4 boneGlobalModel = transform.GetModelMatrix() * getSoketMat("center");
-    return glm::vec3(boneGlobalModel[3]);
-}
-
-const glm::mat4& Player::getSoketMat(const std::string &name)
-{
-    const int soket = m_sokets[name];
-    const auto& bones = m_animator3D.GetGlobalBoneMatrices();
-    return bones[soket];
-}
-#pragma endregion
 
 #pragma region override_functions
 void Player::Update(const ObjectUpdateContext &context)
@@ -64,32 +44,36 @@ void Player::Update(const ObjectUpdateContext &context)
     
     updateWorldHeight(*context.world);  // update height based on world height
 
-    updateSelfAndChild();
-    updateWeaponTransform();
+    if(transform.IsDirty())
+    {
+        updateSelfAndChild();
+        Transform colTransform = transform;
+        colTransform.SetLocalRotation(transform.GetLocalRotation() + axisFix);
+        colTransform.ComputeModelMatrix();
+        m_aabb->UpdateGlobalAABB(collider.worldAABB, colTransform);
+        context.world->UpdateChunkCollider(collider);
+    }
+
+    if(ObjectDestroyed) 
+    {
+        EntityDestroyed = true;
+        RenderableDestroyed = true;
+        CollidableDestroyed = true;
+    }
+
+    for(auto&& child : children)
+    {
+        auto* gameObject = dynamic_cast<GameObject*>(child.get());
+        if(gameObject) gameObject->Update(context);
+    }
 }
 
-void Player::UpdateAnimation(float dt)
-{
-    m_animator3D.UpdateAnimation(dt);
-}
-void Player::SetAnimation(Animation* animation, bool force)
-{
-    if(animation == nullptr) return;
-    m_animator3D.PlayAnimation(animation, force);
-}
-void Player::AddAnimation(const std::string &name, Animation *animation)
-{
-    m_animator3D.registAnimation(name, animation);
-}
-#pragma endregion
-
-#pragma region render
 void Player::Render(const Frustum &frustum)
 {
     // inside frsutum
-    if (m_collider->isOnFrustum(frustum, transform))
+    if (m_aabb->isOnFrustum(frustum, transform))
     {
-        m_renderer.Draw(m_shader, transform, m_model, m_animator3D);
+        m_renderer.Draw(m_shader, transform, m_model, Animator3D);
     }
 
     // draw children
@@ -103,9 +87,9 @@ void Player::Render(const Frustum &frustum)
 void Player::RenderShadow(const Frustum &frustum)
 {
     // inside frsutum
-    if (m_collider->isOnFrustum(frustum, transform))
+    if (m_aabb->isOnFrustum(frustum, transform))
     {
-        m_renderer.DrawShadow(transform, m_model, m_animator3D);
+        m_renderer.DrawShadow(transform, m_model, Animator3D);
     }
 
     // draw children
@@ -114,6 +98,12 @@ void Player::RenderShadow(const Frustum &frustum)
         if (auto* renderable = dynamic_cast<Renderable*>(child.get()))
             renderable->RenderShadow(frustum);
     }
+}
+
+void Player::SocketConfig()
+{
+    m_sockets["RightHand"] = 88;
+    m_sockets["Center"] = 27;
 }
 #pragma endregion
 
@@ -125,7 +115,7 @@ void Player::RequestMove(const glm::vec3 direction, bool isRunning)
     m_inputMoveDirection = direction;
     m_inputIsRunning = isRunning;
     
-    if(m_actionState == ActionState::Attack1 || m_actionState == ActionState::Attack2 || m_actionState == ActionState::Attack3) return; // if performing attack, ignore move input
+    if(m_actionState == ActionState::Attack1) return; // if performing attack, ignore move input
 
     m_moveDirection = direction;
     m_isRunning = isRunning;
@@ -137,15 +127,8 @@ void Player::RequestAttack()
     if(m_actionState != ActionState::None) {
         if(canCancelAction())
         {
-            if(m_actionState == ActionState::Attack1) {
-                m_inputActionState = ActionState::Attack2; // if currently performing first attack, buffer second attack input for combo
-            }
-            else if(m_actionState == ActionState::Attack2) {
-                m_inputActionState = ActionState::Attack3; // if currently performing second attack, buffer third attack input for combo
-            }
-            else {
-                m_inputActionState = ActionState::Attack1; // otherwise, buffer first attack input
-            }
+            m_weapon->EndAttack();
+            m_inputActionState = ActionState::Attack1;
             m_actionInputBufferTime = ACTION_INPUT_BUFFER_TIME; // reset input buffer timer
         }
         return; 
@@ -169,6 +152,13 @@ void Player::RequestRoll()
     startAction(ActionState::Roll);
 }
 
+void Player::RequestHit()
+{
+    m_inputActionState = ActionState::Hit;
+    m_actionInputBufferTime = ACTION_INPUT_BUFFER_TIME;
+    startAction(ActionState::Hit);
+}
+
 ActionState Player::GetActionState() const
 {
     return m_actionState;
@@ -184,13 +174,16 @@ MotionState Player::GetMotionState() const
 void Player::updateWorldHeight(const World &world)
 {
     glm::vec3 localPos = transform.GetLocalPosition();
-    localPos.y = world.GetWorldHeight(localPos.x, localPos.z);
+    float height = world.GetWorldHeight(localPos.x, localPos.z);
+    if(localPos.y == height) return;
+
+    localPos.y = height;
     transform.SetLocalPosition(localPos);
 }
 
 void Player::startAction(ActionState action)
 {
-    m_animator3D.GetRootMotionDelta(); // reset root motion delta to prevent sudden position change when starting action
+    Animator3D.GetRootMotionDelta(); // reset root motion delta to prevent sudden position change when starting action
 
     m_actionState = action;
     m_actionTimer = 0.0f;
@@ -200,19 +193,15 @@ void Player::startAction(ActionState action)
     // if animation playing is forced, animation will play without blending from current animation
     if(action == ActionState::Attack1)
     {
-        SetAnimation(m_animator3D.GetAnimation("Attack1"), true); // force play attack animation
-    }
-    else if(action == ActionState::Attack2)
-    {
-        SetAnimation(m_animator3D.GetAnimation("Attack2"), true); // force play attack animation
-    }
-    else if(action == ActionState::Attack3)
-    {
-        SetAnimation(m_animator3D.GetAnimation("Attack3"), true); // force play attack animation
+        SetAnimation(Animator3D.GetAnimation("Attack1"), true); // force play attack animation
     }
     else if(action == ActionState::Roll)
     {
-        SetAnimation(m_animator3D.GetAnimation("Roll"), true); // force play roll animation
+        SetAnimation(Animator3D.GetAnimation("Roll"), true); // force play roll animation
+    }
+    else if(action == ActionState::Hit)
+    {
+        SetAnimation(Animator3D.GetAnimation("Hit"), true); // force play hit animation
     }
 }
 
@@ -229,14 +218,7 @@ void Player::updateAction(float dt)
     }
 
     m_actionTimer += dt;
-    if(m_actionState == ActionState::Attack1 || m_actionState == ActionState::Attack2 || m_actionState == ActionState::Attack3)
-    {
-        attack(dt);
-    }
-    else if(m_actionState == ActionState::Roll)
-    {
-        roll(dt);
-    }
+    action(dt);
 
     m_actionInputBufferTime -= dt;
     if(m_actionInputBufferTime <= 0.0f)
@@ -270,13 +252,13 @@ bool Player::canCancelAction() const
 void Player::transformFromActionAnimation(float dt)
 {
     // apply position delta from root motion
-    glm::vec3 rootMotionDelta = m_animator3D.GetRootMotionDelta();
+    glm::vec3 rootMotionDelta = Animator3D.GetRootMotionDelta();
     glm::vec3 localPosition = transform.GetLocalPosition();
     glm::vec3 localRotation = transform.GetLocalRotation();
 
     glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(localRotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
 
-    localPosition += glm::vec3(rotationMatrix * glm::vec4(rootMotionDelta, 1.0f)) * dt * 2.0f; // scale root motion delta for better movement feel
+    localPosition += glm::vec3(rotationMatrix * glm::vec4(rootMotionDelta, 0.0f)) * dt * 2.0f; // scale root motion delta for better movement feel
     transform.SetLocalPosition(localPosition);
 }
 
@@ -301,22 +283,22 @@ void Player::updateAnimation()
     // update animation based on motion state
     if(m_motionState == MotionState::Idle)
     {
-        SetAnimation(m_animator3D.GetAnimation("Idle"));
+        SetAnimation(Animator3D.GetAnimation("Idle"));
     }
     else if(m_motionState == MotionState::Walk)
     {
-        SetAnimation(m_animator3D.GetAnimation("Walk"));
+        SetAnimation(Animator3D.GetAnimation("Walk"));
     }
     else if(m_motionState == MotionState::Run)
     {
-        SetAnimation(m_animator3D.GetAnimation("Run"));
+        SetAnimation(Animator3D.GetAnimation("Run"));
     }
 }
 
 void Player::move(Camera &camera, float dt)
 {
     if(glm::length2(m_moveDirection) < 0.0001f) return;
-    if(m_actionState == ActionState::Attack1 || m_actionState == ActionState::Attack2 || m_actionState == ActionState::Attack3) return;
+    if(m_actionState == ActionState::Attack1 || m_actionState == ActionState::Hit) return;
 
     float velocity = Speed * dt * (m_isRunning ? 2.5f : 1.0f); // increase speed if running
     if(m_actionState == ActionState::Roll) velocity = 0.0f; // if rolling, only change direction
@@ -357,53 +339,28 @@ float NormalizeAngle(float angle)
     return angle;
 }
 
-void Player::attack(float dt)
+void Player::action(float dt)
 {
-    const float attackDuration = 2.0f; // duration of the attack animation
-    if(m_weapon != nullptr)
+    if(Animator3D.IsAnimationFinished())
     {
-        if(m_animator3D.IsAnimationFinished())
-        {
-            transitionFromAction();
-            return;
-        }
-
-        transformFromActionAnimation(dt); // apply root motion from attack animation
-    }
-}
-
-void Player::roll(float dt)
-{
-    const float rollDuration = 2.0f; // duration of the roll animation
-    if(m_actionTimer >= rollDuration)
-    {
+        m_weapon->EndAttack();
         transitionFromAction();
         return;
     }
 
-    transformFromActionAnimation(dt); // apply root motion from attack animation
+    if(m_actionState == ActionState::Attack1)
+    {
+        if(m_actionTimer >= 1.0f)
+        {
+            m_weapon->EndAttack();
+        }
+        else if(m_actionTimer >= 0.5f)
+        {
+            if(!m_weapon->IsAttacking()) m_weapon->StartAttack();
+        }
+    }
+
+    transformFromActionAnimation(dt); // apply root motion from animation
 }
 
-#pragma endregion
-
-#pragma region weapon_control
-void Player::AttachWeapon(Weapon *weapon)
-{
-    m_weapon = weapon;
-    weapon->SetOwner(this);
-}
-
-void Player::updateWeaponTransform()
-{
-    const int soket = m_sokets["RightHand"];
-    const auto& bones = m_animator3D.GetGlobalBoneMatrices();
-
-    // bone world matrix
-    glm::mat4 boneModel = transform.GetModelMatrix() * bones[soket];
-    // weapon
-    glm::mat4 weaponLocalMat = m_weapon->transform.GetLocalMatrix();
-    glm::mat4 weaponWorldMat = boneModel * weaponLocalMat;
-
-    m_weapon->transform.SetModelMatrix(weaponWorldMat);
-}
 #pragma endregion

@@ -13,6 +13,7 @@ struct Material{
     sampler2D texture_ambient1;
     sampler2D texture_roughness1;
     sampler2D texture_metallic1;
+    sampler2D texture_specular1;
 };
 
 uniform Material material;

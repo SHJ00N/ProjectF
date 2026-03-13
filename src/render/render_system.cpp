@@ -10,6 +10,7 @@
 #include "particle/particle.h"
 #include "render/pass/sky_box_pass.h"
 #include "render/pass/particle_pass.h"
+#include "debug/debug_render_pass.h"
 
 #include <iostream>
 
@@ -30,6 +31,7 @@ RenderSystem::~RenderSystem()
     delete m_ssaoPass;
     delete m_skyBoxPass;
     delete m_particlePass;
+    delete m_debugPass;
 }
 
 #pragma endregion
@@ -45,6 +47,7 @@ void RenderSystem::Init()
     m_ssaoPass = new SSAOPass(m_width, m_height);
     m_skyBoxPass = new SkyBoxPass();
     m_particlePass = new ParticlePass();
+    m_debugPass = new DebugPass();
 }
 
 void RenderSystem::BeginFrame(Scene *scene)
@@ -70,6 +73,7 @@ void RenderSystem::Render(Scene *scene, float dt)
         m_pbrPass->Render(m_geometryPass->GetTextures(), m_cascadedShadowPass->GetShadowMapTexture(), m_ssaoPass->GetSSAOTexture(), scene->GetIBLData());
         
         // forward rendering
+         m_debugPass->RenderAABB(scene, m_geometryPass->GetTextures().depth);
         // render skybox with forward rendering
         m_skyBoxPass->Render(scene->GetIBLData().envCubeMap);
         // particle render

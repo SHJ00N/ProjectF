@@ -22,6 +22,7 @@
                 "${workspaceFolder}\\src\\scene\\*.cpp",
                 "${workspaceFolder}\\src\\world\\*.cpp",
                 "${workspaceFolder}\\src\\particle\\*.cpp",
+                "${workspaceFolder}\\src\\debug\\*.cpp",
                 
                 "/Fo${workspaceFolder}\\build\\obj\\",
                 "/Fd${workspaceFolder}\\build\\pdb\\ProjectF.pdb",

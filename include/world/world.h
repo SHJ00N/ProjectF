@@ -13,7 +13,7 @@ class World
 {
 public:
     // constructor
-    World(const std::string &heightMapPath, float worldScale, float heightScale, int chunkRez, float chunkWorldSize, int viewDistance);
+    World(const std::string &heightMapPath, float worldScale, float heightScale, int chunkRez, float chunkWorldSize, int viewDistance, int physicsRadius);
     // sample height and normal in world space
     float GetWorldHeight(float worldX, float worldZ) const;
     glm::vec3 GetWorldNormal(float worldX, float worldZ) const;
@@ -28,6 +28,7 @@ public:
     HeightMapData& GetHeightMapData() { return m_heightMapData; }
 
     void Update(const glm::vec3 cameraPos);
+    void UpdateChunkCollider(struct BoxCollider &collider);
 
 private:
     // world data

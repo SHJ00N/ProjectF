@@ -10,6 +10,8 @@ class Player;
 class World;
 class BoneDemoObj;
 class Weapon;
+class CollisionSystem;
+class Enemy;
 
 class GamePlayScene : public Scene
 {
@@ -27,8 +29,10 @@ public:
 
 private:
     // obj
-    Player *player;
+    Player* player;
+    Enemy* enemy;
     BoneDemoObj *boneDemoObj;
     World *world;
     Weapon *sword;
+    CollisionSystem * collisionSystem;
 };

@@ -5,6 +5,8 @@
 #include <vector>
 
 #include "object/entity.h"
+#include "object/interface/renderable.h"
+#include "particle/particle_manager.h"
 
 class Shader;
 class ComputeShader;
@@ -19,11 +21,13 @@ public:
 
         transform.SetLocalPosition(position);
         transform.SetLocalScale(scale);
-        updateSelfAndChild();
     }
     ~Particle()
     {
         if (m_posBuf != 0) glDeleteBuffers(1, &m_posBuf);
+        if (m_velBuf != 0) glDeleteBuffers(1, &m_velBuf);
+
+        ParticleManager::Instance->Remove(this);
     }
 
     virtual void Init() = 0;
