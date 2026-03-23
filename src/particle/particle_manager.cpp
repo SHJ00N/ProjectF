@@ -16,11 +16,11 @@ void ParticleManager::Update(float dt)
     }
 }
 
-void ParticleManager::Render(unsigned int depthTexture, int width, int height)
+void ParticleManager::Render(int width, int height)
 {
     for(auto& particle: m_particles)
     {
-        particle->Render(depthTexture, width, height);
+        particle->Render(width, height);
     }
 }
 

@@ -77,7 +77,7 @@ void GamePlayScene::Init()
 
     // load texture
     ResourceManager::LoadTerrainTexture("resources/texture/Diffuse_16BIT_PNG.png", "resources/texture/CombinedNormal_8BIT_PNG.png", "resources/texture/Roughness_16BIT_PNG.png", "snowField", false);
-    ResourceManager::LoadTexture("resources/texture/blood1.png", true, "blood_splatter", GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
+    ResourceManager::LoadTexture("resources/texture/blood1.png", false, "blood_splatter", GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR);
     // create world and renderer
     world = new World("resources/texture/Heightmap_16BIT_PNG.png", 1.0f, 640.0f, 4, 64.0f, 40, 2);
     terrainRenderer = new TerrainRenderer(ResourceManager::GetShader("terrainShader"), ResourceManager::GetShader("terrainShadow"), *world, ResourceManager::GetTerrainTexture("snowField"));
@@ -111,7 +111,7 @@ void GamePlayScene::Init()
     Lights.push_back(new DirLight(LightType::Direction, glm::vec3(-0.6f, -1.0f, 0.7f), glm::vec3(0.4f, 0.6f, 1.0f), 1.0f));
 
     // create game objects and set animator
-    player = &Root->addChild<Player>(ResourceManager::GetModel("knight"), ResourceManager::GetShader("boneModel"), glm::vec3(2090.0f, 0.0f, 1800.0f), glm::vec3(0.01f), glm::vec3(0.0f), glm::vec2(0.0f), Layer::Player);
+    player = &Root->addChild<Player>(ResourceManager::GetModel("knight"), ResourceManager::GetShader("boneModel"), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.01f), glm::vec3(0.0f), glm::vec2(0.0f), Layer::Player);
     player->AddAnimation("Idle", &ResourceManager::GetAnimation("knight_idle"));
     player->AddAnimation("Walk", &ResourceManager::GetAnimation("knight_walk"));
     player->AddAnimation("Run", &ResourceManager::GetAnimation("knight_run"));
@@ -139,6 +139,8 @@ void GamePlayScene::Start()
         object->Init();
     }
     enemySpawnManager->Init(this, *player);
+    player->transform.SetLocalPosition(glm::vec3(2090.0f, 0.0f, 1800.0f));
+    player->transform.SetLocalRotation(glm::vec3(0.0f));
 }
 
 void GamePlayScene::Update(float dt)
@@ -167,6 +169,7 @@ void GamePlayScene::Update(float dt)
     enemySpawnManager->Update(this, *player, dt);
 
     UIUpdate();
+    if(player->Health <= 0) sceneState = SceneState::End;
 
     // remove destroyed objects
     CleanUpLists();
@@ -188,9 +191,10 @@ void GamePlayScene::ProcessInput(float dt)
     // movement input
     player->RequestMove(glm::vec3(Keys[GLFW_KEY_D] - Keys[GLFW_KEY_A], 0.0f, Keys[GLFW_KEY_W] - Keys[GLFW_KEY_S]), Keys[GLFW_KEY_LEFT_SHIFT]);
 
-    if(MouseButtonRight)
+    if(sceneState == SceneState::End && Keys[GLFW_KEY_ENTER])
     {
-        ParticleManager::Instance->SpawnBloodParticle(player, player->GetSocketLocalPosition("Center") + glm::vec3(0.0f, 40.0f, 0.0f));
+        Start();
+        sceneState = SceneState::Running;
     }
 }
 
@@ -199,7 +203,7 @@ void GamePlayScene::UIUpdate()
     // player Health UI
     uiTexts.push_back(
         {
-            "HP : " + std::to_string(player->Health),
+            "HP : " + std::to_string(player->Health >= 0 ? player->Health : 0),
             20.0f, 20.0f,
             1.0f,
             glm::vec3(1.0f, 1.0f, 1.0f)
@@ -215,6 +219,18 @@ void GamePlayScene::UIUpdate()
             glm::vec3(1.0f, 1.0f, 1.0f)
         }
     );
+
+    if(sceneState == SceneState::End)
+    {
+        uiTexts.push_back(
+            {
+                "press Enter to restart",
+                (float)Width * 0.35f, (float)Height * 0.75f,
+                2.0f,
+                glm::vec3(1.0f, 1.0f, 1.0f)
+            }
+        );
+    }
 }
 
 void GamePlayScene::End()

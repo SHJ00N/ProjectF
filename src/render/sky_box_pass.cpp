@@ -10,15 +10,11 @@ SkyBoxPass::SkyBoxPass()
     ResourceManager::GetShader("background").SetInteger("environmentMap", 0);
 }
 
-void SkyBoxPass::Render(unsigned int envCubeMap)
+void SkyBoxPass::Render(unsigned int envCubeMap, unsigned int frameBuffer)
 {
+    glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
     glDepthFunc(GL_LEQUAL);
     glDepthMask(GL_FALSE);
-
-    // glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
-    // glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    // glBlitFramebuffer(0, 0, m_width, m_height, 0, 0, m_width, m_height, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-    // glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     ResourceManager::GetShader("background").Use();
     glActiveTexture(GL_TEXTURE0);

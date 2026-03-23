@@ -37,6 +37,12 @@ struct UIText
     glm::vec3 color;
 };
 
+enum class SceneState
+{
+    Running,
+    End
+};
+
 class Scene
 {
 public:
@@ -82,6 +88,7 @@ public:
     std::vector<Collidable*>& GetCollidables() { return collidables; }
     std::vector<UIText>& GetUITexts() { return uiTexts; }
     TerrainRenderer* GetTerrainRenderer() { return terrainRenderer; }
+    SceneState GetSceneState() { return sceneState; }
     // setter
     void RequestClear() { Request = {SceneOp::None, {}}; }
 
@@ -111,6 +118,8 @@ protected:
     // scene request functions
     void RequestPush(unsigned int sceneID) { Request = {SceneOp::Push, sceneID}; }
     void RequestPop() { Request = {SceneOp::Pop, {}}; }
+
+    SceneState sceneState = SceneState::Running;
 
 private:
     SceneRequest Request;

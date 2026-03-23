@@ -4,7 +4,6 @@ out vec4 FragColor;
 in vec2 UV;
 in float lifeTime;
 
-uniform sampler2D gDepth;
 uniform sampler2D particleImage;
 uniform sampler2D noiseTexture;
 uniform float screenWidth;
@@ -15,11 +14,6 @@ uniform vec3 color;
 void main()
 {
     vec2 uv = vec2(gl_FragCoord.x / screenWidth, gl_FragCoord.y / screenHeight);
-    float sceneDepth = texture(gDepth, uv).r;
-    float particleDepth = gl_FragCoord.z;
-    
-    if(particleDepth > sceneDepth)
-        discard;
 
     float life = clamp(lifeTime, 0.0, 1.0);
 
@@ -31,9 +25,10 @@ void main()
     float alpha = pow(life, 2.5);
 
     vec4 texColor = texture(particleImage, UV); 
-    vec3 freshBlood = vec3(0.55, 0.075, 0.075);
-    vec3 dryBlood   = vec3(0.25, 0.02, 0.01);
+    vec3 freshBlood = vec3(0.4, 0.05, 0.05);
+    vec3 dryBlood   = vec3(0.15, 0.01, 0.005);
     float color =   pow(1.0 - life, 0.6);
     vec3 bloodColor = mix(freshBlood, dryBlood, color);
-    FragColor = vec4(texColor.rgb * bloodColor, texColor.a * alpha * breakup);
+    bloodColor = pow(bloodColor, vec3(1.6));
+    FragColor = vec4(texColor.rgb * 0.6 * bloodColor, texColor.a * alpha * breakup);
 }

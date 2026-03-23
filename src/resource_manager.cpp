@@ -39,10 +39,10 @@ ComputeShader& ResourceManager::GetComputeShader(std::string name)
     return ComputeShaders[name];
 }
 
-Texture2D ResourceManager::LoadTexture(const char *file, bool alpha, std::string name, unsigned int wrap_s, unsigned int wrap_t, unsigned int filter_min, unsigned int filter_max)
+Texture2D ResourceManager::LoadTexture(const char *file, bool gamma, std::string name, unsigned int wrap_s, unsigned int wrap_t, unsigned int filter_min, unsigned int filter_max)
 {
     if(Textures.find(name) == Textures.end())
-        Textures[name] = loadTextureFromFile(file, alpha, wrap_s, wrap_t, filter_min, filter_max);
+        Textures[name] = loadTextureFromFile(file, gamma, wrap_s, wrap_t, filter_min, filter_max);
     return Textures[name];
 }
 
@@ -208,7 +208,7 @@ ComputeShader ResourceManager::loadComputeShaderFromFile(const char *computeShad
     return shader;
 }
 
-Texture2D ResourceManager::loadTextureFromFile(const char *file, bool alpha, unsigned int wrap_s, unsigned int wrap_t, unsigned int filter_min, unsigned int filter_max)
+Texture2D ResourceManager::loadTextureFromFile(const char *file, bool gamma, unsigned int wrap_s, unsigned int wrap_t, unsigned int filter_min, unsigned int filter_max)
 {
     // create texture object
     Texture2D texture;
@@ -217,9 +217,15 @@ Texture2D ResourceManager::loadTextureFromFile(const char *file, bool alpha, uns
     int width, height, nrChannels;
     unsigned char* data = stbi_load(file, &width, &height, &nrChannels, 0);
 
-    if(alpha)
-    {
-        texture.Internal_Format = GL_RGBA;
+    if(nrChannels == 1){
+        texture.Internal_Format = texture.Image_Format = GL_RED;
+    }
+    else if(nrChannels == 3){
+        texture.Internal_Format = gamma ? GL_SRGB : GL_RGB;
+        texture.Image_Format = GL_RGB;
+    }
+    else if(nrChannels == 4){
+        texture.Internal_Format = gamma ? GL_SRGB_ALPHA : GL_RGBA;
         texture.Image_Format = GL_RGBA;
     }
     texture.Wrap_S = wrap_s;

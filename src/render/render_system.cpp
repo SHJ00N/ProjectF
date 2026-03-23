@@ -12,6 +12,8 @@
 #include "render/pass/particle_pass.h"
 #include "debug/debug_render_pass.h"
 #include "render/pass/ui_pass.h"
+#include "render/pass/bloom/bloom_pass.h"
+#include "render/pass/post_process_pass.h"
 
 #include <iostream>
 
@@ -34,6 +36,8 @@ RenderSystem::~RenderSystem()
     delete m_particlePass;
     delete m_debugPass;
     delete m_uiPass;
+    delete m_bloomPass;
+    delete m_postProcessPass;
 }
 
 #pragma endregion
@@ -44,13 +48,15 @@ void RenderSystem::Init()
     configureUBO();
     // create render pass obj
     m_geometryPass = new GeometryPass(m_width, m_height);
-    m_pbrPass = new PBRPass();
+    m_pbrPass = new PBRPass(m_width, m_height, m_geometryPass->GetTextures().depth);
     m_cascadedShadowPass = new CascadedShadowPass(m_width, m_height);
     m_ssaoPass = new SSAOPass(m_width, m_height);
     m_skyBoxPass = new SkyBoxPass();
     m_particlePass = new ParticlePass();
     m_debugPass = new DebugPass();
     m_uiPass = new UIPass(m_width, m_height);
+    m_bloomPass = new BloomPass(m_width, m_height);
+    m_postProcessPass = new PostProcessPass();
 }
 
 void RenderSystem::BeginFrame(Scene *scene)
@@ -65,7 +71,6 @@ void RenderSystem::Render(Scene *scene, float dt)
 {
     if(scene->GetRenderType() == RenderType::Deferred)
     {
-        // deffered rendering
         // geometry pass
         m_geometryPass->Render(scene);
         // cascaded shadow pass
@@ -74,13 +79,16 @@ void RenderSystem::Render(Scene *scene, float dt)
         m_ssaoPass->Render(m_geometryPass->GetTextures());
         // pbr lighting pass
         m_pbrPass->Render(m_geometryPass->GetTextures(), m_cascadedShadowPass->GetShadowMapTexture(), m_ssaoPass->GetSSAOTexture(), scene->GetIBLData());
-        
-        // forward rendering
-        // m_debugPass->RenderAABB(scene, m_geometryPass->GetTextures().depth);
-        // render skybox with forward rendering
-        m_skyBoxPass->Render(scene->GetIBLData().envCubeMap);
+        // render skybox
+        m_skyBoxPass->Render(scene->GetIBLData().envCubeMap, m_pbrPass->GetFrameBuffer());
         // particle render
-        m_particlePass->Render(scene, m_geometryPass->GetTextures().depth, m_width, m_height);
+        m_particlePass->Render(scene, m_pbrPass->GetFrameBuffer(), m_width, m_height);
+        // bloom pass
+        m_bloomPass->Render(m_pbrPass->GetBrightTexture(), 0.005f);
+        // post processing
+        m_postProcessPass->Render(scene, m_pbrPass->GetColorTexture(), m_bloomPass->GetBloomTexture());
+        
+        // m_debugPass->RenderAABB(scene, m_geometryPass->GetTextures().depth);
 
         // ui render
         m_uiPass->Render(scene);

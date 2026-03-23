@@ -9,6 +9,7 @@
 #include "object/behavior_tree/behavior/Benemy_attack.h"
 #include "object/behavior_tree/behavior/Benemy_hit.h"
 #include "object/behavior_tree/behavior/Bdeath.h"
+#include "object/behavior_tree/behavior/Bcheck_origin_position.h"
 
 EnemyBT::EnemyBT(Enemy& enemy, std::vector<glm::vec3> &wayPoints, GameObject &target) : m_enemy(enemy), m_wayPoints(wayPoints), m_target(target)
 {
@@ -41,6 +42,8 @@ std::unique_ptr<BTNode> EnemyBT::SetupTree()
     // add patrol
     if(m_wayPoints.size())
         children.push_back(std::make_unique<Patrol>(m_enemy, m_wayPoints, m_speed));
+    else
+        children.push_back(std::make_unique<CheckOriginPosition>(m_enemy, m_enemy.transform.GetLocalPosition(), m_enemy.transform.GetLocalRotation(), m_speed * 3.0f));
 
     return std::make_unique<Selector>(std::move(children));
 }

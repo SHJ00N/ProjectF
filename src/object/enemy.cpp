@@ -36,8 +36,7 @@ Weapon* Enemy::GetWeapon() const
 #pragma region override
 void Enemy::Init()
 {
-    SetAnimation(Animator3D.GetAnimation("Idle"), false);
-    Health = 500;
+    Health = 90;
     IsHit = false;
     IsDeath = false;
     IsAttacking = false;

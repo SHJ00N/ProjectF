@@ -13,7 +13,7 @@ public:
 
     void Init() final;
     void Update(float dt) final;
-    void Render(unsigned int depthTexture, int width, int height) final;
+    void Render(int width, int height) final;
 
 private:
     float m_lifeTime = 1.5f;

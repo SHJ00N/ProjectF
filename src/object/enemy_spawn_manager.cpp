@@ -97,6 +97,8 @@ void EnemySpawnManager::Update(Scene *scene, GameObject& target, float dt)
 
 void EnemySpawnManager::spawnEnemy(Scene *scene, GameObject &target, SpawnRunTime &spawn)
 {
+    if(spawn.currentEnemy) return;
+    
      // spawn enemy
     auto &enemy = scene->Root->addChild<Enemy>(ResourceManager::GetModel("enemy"), ResourceManager::GetShader("boneModel"), spawn.data.position, glm::vec3(0.01f), spawn.data.rotation);
     enemy.AddAnimation("Idle", &ResourceManager::GetAnimation("enemy_idle"));

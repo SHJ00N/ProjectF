@@ -9,7 +9,7 @@ public:
     static ParticleManager *Instance;
 
     void Update(float dt);
-    void Render(unsigned int depthTexture, int width, int height);
+    void Render(int width, int height);
     
     static class BloodParticle& SpawnBloodParticle(class Entity *parent, const glm::vec3 &localPos);
     static void Remove(class Particle *particle);

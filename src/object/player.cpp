@@ -44,6 +44,7 @@ void Player::Init()
     // init object state
     Health = 100;
     IsDeath = false;
+    ObjectDestroyed = false;
 }
 void Player::Update(const ObjectUpdateContext &context)
 {

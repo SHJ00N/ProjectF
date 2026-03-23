@@ -32,7 +32,7 @@ public:
 
     virtual void Init() = 0;
     virtual void Update(float dt) = 0;
-    virtual void Render(unsigned int depthTexture, int width, int height) = 0;
+    virtual void Render(int width, int height) = 0;
 
 protected:
     Shader &m_shader;

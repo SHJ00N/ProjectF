@@ -3,8 +3,7 @@
 #include "render/pass/screen_space_ambient_occlusion_pass.h"
 #include "render/pass/geometry_pass.h"
 
-#pragma region lifecycle
-PBRPass::PBRPass() : m_quadVBO(0), m_quadVAO(0)
+PBRPass::PBRPass(unsigned int width, unsigned int height, unsigned int depthTexture) : m_quadVBO(0), m_quadVAO(0), m_fbo(0),m_width(width), m_height(height)
 {
     // generate brdfLut map
     m_brdfLut = IBLGenerator::GenerateBRDFLUT();
@@ -23,33 +22,71 @@ PBRPass::PBRPass() : m_quadVBO(0), m_quadVAO(0)
     ResourceManager::GetShader("PBR").SetInteger("shadowMapOffset", 8);
     ResourceManager::GetShader("PBR").SetInteger("ssao",            9);
     ResourceManager::GetShader("PBR").SetInteger("gTypeSlope",     10);
+
+    // frame buffer
+    glGenFramebuffers(1, &m_fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
+    // color attachment
+    glGenTextures(2, m_colorBuffers);
+    for(int i = 0; i < 2; i++)
+    {
+        glBindTexture(GL_TEXTURE_2D, m_colorBuffers[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, m_width, m_height, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        // attach color buffer to fbo
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, m_colorBuffers[i], 0);
+    }
+    // attach depth buffer to fbo
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTexture, 0);
+    // tell to OpenGL
+    unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+    glDrawBuffers(2, attachments);
+    // check complete
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        std::cout << "Framebuffer not complete!" << std::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 PBRPass::~PBRPass()
 {
     // delete texture
     glDeleteTextures(1, &m_brdfLut);
+    glDeleteTextures(2, m_colorBuffers);
     // delete buffers
     if(m_quadVBO)glDeleteBuffers(1, &m_quadVBO);
     if(m_quadVAO)glDeleteVertexArrays(1, &m_quadVAO);
-    m_quadVBO = m_quadVAO = 0;
+    if(m_fbo) glDeleteFramebuffers(1, &m_fbo);
+    m_quadVBO = m_quadVAO = m_fbo = 0;
 }
 
-#pragma endregion
-
-#pragma region loop
-void PBRPass::Configure()
+unsigned int PBRPass::GetColorTexture() const
 {
-    // bind framebuffer
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    // clear buffer
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    return m_colorBuffers[0];
 }
+
+unsigned int PBRPass::GetBrightTexture() const
+{
+    return m_colorBuffers[1];
+}
+
+unsigned int PBRPass::GetFrameBuffer() const
+{
+    return m_fbo;
+}
+
 
 void PBRPass::Render(GBufferTextures& gBufferTextures, ShadowMapTexture shadowMap, SSAOTexture& ssaoTexture, IBLData iblTextures)
 {
+    // bind framebuffer
+    glBindFramebuffer(GL_FRAMEBUFFER, m_fbo);
     // set state
-    Configure();
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+    // clear buffer
+    glClear(GL_COLOR_BUFFER_BIT);
 
     ResourceManager::GetShader("PBR").Use();
     // update sampler
@@ -83,9 +120,11 @@ void PBRPass::Render(GBufferTextures& gBufferTextures, ShadowMapTexture shadowMa
     // draw
     renderQuad();
 
+    // reset state
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
 }
-#pragma endregion
 
 #pragma region render draw function
 void PBRPass::renderQuad()

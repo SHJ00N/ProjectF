@@ -7,5 +7,5 @@ class Scene;
 class ParticlePass
 {
 public:
-    void Render(Scene *scene, unsigned int depthTexture, int width, int height);
+    void Render(Scene *scene, unsigned int framebuffer, int width, int height);
 };

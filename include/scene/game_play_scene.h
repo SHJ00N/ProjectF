@@ -6,7 +6,6 @@
 #include "scene/scene.h"
 #include "camera.h"
 
-
 class GamePlayScene : public Scene
 {
 public: 

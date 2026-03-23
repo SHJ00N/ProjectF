@@ -32,7 +32,7 @@ public:
     // retrieves a stored compute shader
     static ComputeShader& GetComputeShader(std::string name);
     // loads (and generates) a texture from file
-    static Texture2D LoadTexture(const char *file, bool alpha, std::string name, unsigned int wrap_s, unsigned int wrap_t, unsigned int filter_min, unsigned int filter_max);
+    static Texture2D LoadTexture(const char *file, bool gamma, std::string name, unsigned int wrap_s, unsigned int wrap_t, unsigned int filter_min, unsigned int filter_max);
     // retrieves a stored texture
     static Texture2D& GetTexture(std::string name);
     // loads (and generates) a model from file
@@ -57,7 +57,7 @@ private:
     // loads and generates a compute shader from file
     static ComputeShader loadComputeShaderFromFile(const char *computeShaderFile);
     // loads a single texture from file
-    static Texture2D loadTextureFromFile(const char *file, bool alpha, unsigned int wrap_s, unsigned int wrap_t, unsigned int filter_min, unsigned int filter_max);
+    static Texture2D loadTextureFromFile(const char *file, bool gamma, unsigned int wrap_s, unsigned int wrap_t, unsigned int filter_min, unsigned int filter_max);
     // loads a single model from file
     static Model loadModelFromFile(const char *file, bool gamma);
     // loads a single animation from file

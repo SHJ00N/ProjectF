@@ -37,6 +37,7 @@ BTState Patrol::Evaluate(float dt)
         else
         {
             // move to waypoint
+            if(m_animatable) m_animatable->Animator3D.PlayAnimation("Walk");
             Move(wp, dt);
         }
     }

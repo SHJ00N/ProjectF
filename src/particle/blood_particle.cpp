@@ -62,9 +62,8 @@ void BloodParticle::Init()
 
     // set shader's uniform value
     m_shader.Use();
-    m_shader.SetInteger("gDepth", 0);
-    m_shader.SetInteger("particleImage", 1);
-    m_shader.SetInteger("noiseTexture", 2);
+    m_shader.SetInteger("particleImage", 0);
+    m_shader.SetInteger("noiseTexture", 1);
 }
 
 void BloodParticle::Update(float dt)
@@ -81,7 +80,7 @@ void BloodParticle::Update(float dt)
     glDispatchCompute(m_totalParticles, 1, 1);
 }
 
-void BloodParticle::Render(unsigned int depthTexture, int width, int height)
+void BloodParticle::Render(int width, int height)
 {
     glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
 
@@ -90,10 +89,8 @@ void BloodParticle::Render(unsigned int depthTexture, int width, int height)
     m_shader.SetFloat("screenWidth", (float)width);
     m_shader.SetFloat("screenHeight", (float)height);
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, depthTexture);
-    m_texture.Bind(1);
-    m_noiseTexture.Bind(2);
+    m_texture.Bind(0);
+    m_noiseTexture.Bind(1);
 
     glBindVertexArray(m_quadVAO);
     glDrawArraysInstanced(GL_TRIANGLES, 0, 6, m_totalParticles);
