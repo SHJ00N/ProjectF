@@ -3,6 +3,7 @@
 #include "frustum.h"
 #include "object/weapon.h"
 #include "particle/particle_manager.h"
+#include "sound_manager.h"
 
 #include <iostream>
 
@@ -131,7 +132,8 @@ void Player::TakeDamage(int damage)
 
     RequestHit();
     Health -= damage;
-    ParticleManager::SpawnBloodParticle(this, GetSocketLocalPosition("Center") + glm::vec3(0.0f, 40.0f, 0.0f));
+    SoundManager::GetInstance().PlaySFX("hit");
+    ParticleManager::GetInstance().SpawnBloodParticle(this, GetSocketLocalPosition("Center") + glm::vec3(0.0f, 40.0f, 0.0f));
 
     if(Health <= 0) 
     {
@@ -314,15 +316,35 @@ void Player::transformFromActionAnimation(float dt)
 
 void Player::updateMotion()
 {
-    if(m_actionState != ActionState::None) return;
-
-    if(glm::length2(m_moveDirection) < 0.0001f)
+    MotionState prevState = m_motionState;
+    
+    if(m_actionState != ActionState::None) 
     {
         m_motionState = MotionState::Idle;
-        return;
+    }
+    else if(glm::length2(m_moveDirection) < 0.0001f)
+    {
+        m_motionState = MotionState::Idle;
+    }
+    else
+    {
+        m_motionState = m_isRunning ? MotionState::Run : MotionState::Walk;
     }
 
-    m_motionState = m_isRunning ? MotionState::Run : MotionState::Walk;
+    if(prevState == m_motionState) return;
+
+    switch(m_motionState)
+    {
+        case MotionState::Idle:
+            SoundManager::GetInstance().StopLoop("footStep");
+            break;
+        case MotionState::Walk:
+            SoundManager::GetInstance().PlayLoop("footStep", 0.45f);
+            break;
+        case MotionState::Run:
+            SoundManager::GetInstance().PlayLoop("footStep", 0.7f);
+            break;
+    }
 }
 
 void Player::updateAnimation()
@@ -412,7 +434,10 @@ void Player::action(float dt)
         }
         else if(m_actionTimer >= 0.5f)
         {
-            if(!m_weapon->IsAttacking()) m_weapon->StartAttack();
+            if(!m_weapon->IsAttacking()) 
+            {
+                m_weapon->StartAttack();
+            }
         }
     }
 

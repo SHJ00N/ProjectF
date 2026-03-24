@@ -7,7 +7,6 @@
 #include "light/direction_light.h"
 #include "world/world.h"
 #include "object/player.h"
-#include "object/bone_demo_obj.h"
 #include "object/weapon.h"
 #include "object/game_object.h"
 #include "particle/particle_manager.h"
@@ -15,6 +14,8 @@
 #include "particle/blood_particle.h"
 #include "object/enemy/enemy.h"
 #include "object/enemy/enemy_spawn_manager.h"
+#include "particle/particle_manager.h"
+#include "sound_manager.h"
 
 std::vector<glm::vec3> wayPoints
 {
@@ -46,7 +47,6 @@ GamePlayScene::~GamePlayScene()
     delete world;
     delete terrainRenderer;
     delete collisionSystem;
-    delete particleManager;
     delete enemySpawnManager;
     // all lists clear
     gameObjects.clear();
@@ -58,13 +58,17 @@ GamePlayScene::~GamePlayScene()
 
 void GamePlayScene::Init()
 {
-    particleManager = new ParticleManager();
-    ParticleManager::Instance = particleManager;
-
     collisionSystem = new CollisionSystem();
     
     enemySpawnManager = new EnemySpawnManager();
-    enemySpawnManager->LoadSpawnDataFromFile("resources/enemy_spawn_data/spawn_data.txt");
+    enemySpawnManager->LoadSpawnDataFromFile("resources/text/spawn_data.txt");
+
+    // load sounds
+    SoundManager::GetInstance().Init();
+    SoundManager::GetInstance().LoadSound("resources/sound/Footstep_Sand_05.wav", "footStep", true);
+    SoundManager::GetInstance().LoadSound("resources/sound/Hit_Metal.wav", "hit");
+    SoundManager::GetInstance().LoadSound("resources/sound/slash.wav", "slash");
+    SoundManager::GetInstance().LoadSound("resources/sound/wind.mp3", "wind", true);
 
     // load shaders
     ResourceManager::LoadShader("shaders/model_shader/boneMesh.vert", "shaders/model_shader/mesh.frag", nullptr, nullptr, nullptr, "boneModel");
@@ -141,6 +145,8 @@ void GamePlayScene::Start()
     enemySpawnManager->Init(this, *player);
     player->transform.SetLocalPosition(glm::vec3(2090.0f, 0.0f, 1800.0f));
     player->transform.SetLocalRotation(glm::vec3(0.0f));
+
+    SoundManager::GetInstance().PlayLoop("wind", 1.0f, 0.3f);
 }
 
 void GamePlayScene::Update(float dt)
@@ -156,7 +162,7 @@ void GamePlayScene::Update(float dt)
     }
 
     // update particle
-    particleManager->Update(dt);
+    ParticleManager::GetInstance().Update(dt);
 
     // update camera
     MainCamera->Update(player->GetSocketGlobalPosition("Center"), dt);
@@ -174,6 +180,9 @@ void GamePlayScene::Update(float dt)
     // remove destroyed objects
     CleanUpLists();
     Root->cleanupDestroyed();
+
+    // update sound
+    SoundManager::GetInstance().Update();
 }
 
 void GamePlayScene::ProcessInput(float dt)
@@ -224,7 +233,7 @@ void GamePlayScene::UIUpdate()
     {
         uiTexts.push_back(
             {
-                "press Enter to restart",
+                "Press Enter to restart",
                 (float)Width * 0.35f, (float)Height * 0.75f,
                 2.0f,
                 glm::vec3(1.0f, 1.0f, 1.0f)
@@ -235,5 +244,5 @@ void GamePlayScene::UIUpdate()
 
 void GamePlayScene::End()
 {
-
+    SoundManager::GetInstance().StopLoop("wind");
 }

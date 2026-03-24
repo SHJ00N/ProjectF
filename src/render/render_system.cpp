@@ -82,7 +82,7 @@ void RenderSystem::Render(Scene *scene, float dt)
         // render skybox
         m_skyBoxPass->Render(scene->GetIBLData().envCubeMap, m_pbrPass->GetFrameBuffer());
         // particle render
-        m_particlePass->Render(scene, m_pbrPass->GetFrameBuffer(), m_width, m_height);
+        m_particlePass->Render(m_pbrPass->GetFrameBuffer(), m_width, m_height);
         // bloom pass
         m_bloomPass->Render(m_pbrPass->GetBrightTexture(), 0.005f);
         // post processing

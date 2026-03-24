@@ -3,6 +3,7 @@
 #include "frustum.h"
 #include "particle/particle_manager.h"
 #include "object/weapon.h"
+#include "sound_manager.h"
 
 #include <iostream>
 
@@ -124,7 +125,8 @@ void Enemy::TakeDamage(int damage)
     IsHit = true;
     SetAnimation(Animator3D.GetAnimation("Hit"), true);
     Health -= damage;
-    ParticleManager::SpawnBloodParticle(this, GetSocketLocalPosition("Center") + glm::vec3(0.0f, 40.0f, 0.0f));
+    SoundManager::GetInstance().PlaySFX("hit");
+    ParticleManager::GetInstance().SpawnBloodParticle(this, GetSocketLocalPosition("Center") + glm::vec3(0.0f, 40.0f, 0.0f));
 
     if(Health <= 0) 
     {

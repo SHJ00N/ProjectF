@@ -2,6 +2,7 @@
 #include "object/player.h"
 #include "world/world.h"
 #include "object/interface/damageable.h"
+#include "sound_manager.h"
 
 #include <iostream>
 
@@ -92,6 +93,7 @@ void Weapon::OnCollisionEnter(Collider *other)
 
 void Weapon::StartAttack()
 {
+    SoundManager::GetInstance().PlaySFX("slash", 0.8f);
     m_isAttackActive = true;
     m_hitTargets.clear();
 }

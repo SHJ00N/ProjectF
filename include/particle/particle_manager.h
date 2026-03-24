@@ -6,14 +6,24 @@
 class ParticleManager
 {
 public:
-    static ParticleManager *Instance;
+    static ParticleManager& GetInstance()
+    {
+        static ParticleManager instance;
+        return instance;
+    }
 
     void Update(float dt);
     void Render(int width, int height);
     
-    static class BloodParticle& SpawnBloodParticle(class Entity *parent, const glm::vec3 &localPos);
-    static void Remove(class Particle *particle);
+    class BloodParticle& SpawnBloodParticle(class Entity *parent, const glm::vec3 &localPos);
+    void Remove(class Particle *particle);
 
 private:
+    ParticleManager() = default;
+    ParticleManager(const ParticleManager&) = delete;
+	ParticleManager& operator=(const ParticleManager&) = delete;
+	ParticleManager(ParticleManager&&) = delete;
+	ParticleManager& operator=(ParticleManager&&) = delete;
+
     std::vector<class Particle*> m_particles;
 };

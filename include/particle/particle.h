@@ -27,7 +27,7 @@ public:
         if (m_posBuf != 0) glDeleteBuffers(1, &m_posBuf);
         if (m_velBuf != 0) glDeleteBuffers(1, &m_velBuf);
 
-        ParticleManager::Instance->Remove(this);
+        ParticleManager::GetInstance().Remove(this);
     }
 
     virtual void Init() = 0;

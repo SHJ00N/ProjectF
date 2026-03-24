@@ -13,7 +13,6 @@
 #include "object/game_object.h"
 #include "object/interface/renderable.h"
 #include "object/interface/collidable.h"
-#include "particle/particle_manager.h"
 
 class TerrainRenderer;
 class Light;
@@ -80,7 +79,6 @@ public:
     SceneRequest GetSceneRequest() { return Request; }
     Camera* GetCamera() { return MainCamera; }
     std::vector<Light*> GetLights() { return Lights; }
-    ParticleManager* GetParticleManager() { return particleManager; }
     RenderType GetRenderType() { return renderType; }
     IBLData GetIBLData() { return IBLtextures; }
     std::vector<GameObject*>& GetGameObjects() { return gameObjects; }
@@ -99,8 +97,6 @@ protected:
     Camera *MainCamera = nullptr;
     // lights
     std::vector<Light*> Lights;
-    // particles
-    ParticleManager* particleManager;
     // render type
     RenderType renderType;
     // IBL data
