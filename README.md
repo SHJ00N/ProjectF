@@ -9,6 +9,7 @@ WASD: movement\
 Space: roll\
 Mouse Left: attack\
 Mouse Wheel: zoom
+ESC: exit game
 
 ## Downloads
 ### Release
