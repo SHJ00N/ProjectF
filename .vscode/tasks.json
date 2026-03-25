@@ -46,6 +46,8 @@
                 "/Fe${workspaceFolder}\\build\\bin\\DarkKnights.exe",
 
                 "/link",
+                "/SUBSYSTEM:WINDOWS",
+                "/ENTRY:mainCRTStartup",
                 "/LIBPATH:${workspaceFolder}\\lib",
 
                 "glfw3dll.lib",
@@ -104,7 +106,7 @@
         {
             "label": "clean-dist",
             "type": "shell",
-            "command": "rmdir",
+            "command" : "rmdir",
             "args": [
                 "/S",
                 "/Q",

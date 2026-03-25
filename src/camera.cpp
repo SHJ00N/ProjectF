@@ -49,15 +49,15 @@ void Camera::Update(const glm::vec3 &targetPos, float dt){
     cameraRight = glm::normalize(glm::cross(cameraFront, worldUp));
     cameraUp    = glm::normalize(glm::cross(cameraRight, cameraFront)); 
 
-    // // zoom when the pitch angle is low
-    // if(pitch > 10.0f)
-    // {
-    //     fov = glm::mix(fov, 30.0f, dt * 6.0f);
-    // } 
-    // else 
-    // {
-    //     fov = glm::mix(fov, targetFov, dt * 6.0f);
-    // }
+    // zoom when the pitch angle is low
+    if(pitch > 10.0f)
+    {
+        fov = glm::mix(fov, 30.0f, dt * 6.0f);
+    } 
+    else 
+    {
+        fov = glm::mix(fov, targetFov, dt * 6.0f);
+    }
 }
 
 glm::mat4 Camera::GetViewMatrix(){
@@ -86,16 +86,20 @@ void Camera::ProcessMouseScroll(float yoffset){
 
 Frustum Camera::GetCameraFrustum(float width, float height)
 {
-    float aspect = width / height;
-	const float halfVSide = farPlane * tanf(fov * 0.5f);
-	const float halfHSide = halfVSide * aspect;
-	const glm::vec3 frontMultFar = farPlane * cameraFront;
+    // calculate viewProjection matrix
+    glm::mat4 viewMat = GetViewMatrix();
+    glm::mat4 projMat = GetProjectionMatrix(width, height);
 
-	frustum.nearFace = { cameraPos + nearPlane * cameraFront, cameraFront };
-	frustum.farFace = { cameraPos + frontMultFar, -cameraFront };
-	frustum.rightFace = { cameraPos, glm::cross(frontMultFar - cameraRight * halfHSide, cameraUp) };
-	frustum.leftFace = { cameraPos, glm::cross(cameraUp, frontMultFar + cameraRight * halfHSide) };
-	frustum.topFace = { cameraPos, glm::cross(cameraRight, frontMultFar - cameraUp * halfVSide) };
-	frustum.bottomFace = { cameraPos, glm::cross(frontMultFar + cameraUp * halfVSide, cameraRight) };
-	return frustum;
+    glm::mat4 vpMat = projMat * viewMat;
+
+    // near/far plane
+    frustum.nearFace = { cameraPos + nearPlane * cameraFront, cameraFront };
+    frustum.farFace = { cameraPos + farPlane * cameraFront, -cameraFront };
+    // left/right/top/bottom plane
+    frustum.leftFace = { cameraPos, glm::vec3(vpMat[0][3] + vpMat[0][0], vpMat[1][3] + vpMat[1][0], vpMat[2][3] + vpMat[2][0]) };
+    frustum.rightFace = { cameraPos, glm::vec3(vpMat[0][3] - vpMat[0][0], vpMat[1][3] - vpMat[1][0], vpMat[2][3] - vpMat[2][0]) };
+    frustum.topFace = { cameraPos, glm::vec3(vpMat[0][3] - vpMat[0][1], vpMat[1][3] - vpMat[1][1], vpMat[2][3] - vpMat[2][1]) };
+    frustum.bottomFace = { cameraPos, glm::vec3(vpMat[0][3] + vpMat[0][1], vpMat[1][3] + vpMat[1][1], vpMat[2][3] + vpMat[2][1]) };
+
+    return frustum;
 }

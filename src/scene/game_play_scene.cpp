@@ -219,15 +219,72 @@ void GamePlayScene::UIUpdate()
         }
     );
 
-    glm::vec3 playerPos = player->transform.GetGlobalPosition();
-    uiTexts.push_back(
-        {
-            "X : " + std::to_string(playerPos.x) + " Y : " + std::to_string(playerPos.y) + " Z : " + std::to_string(playerPos.z),
-            20.0f, 45.0f,
-            0.7f,
-            glm::vec3(1.0f, 1.0f, 1.0f)
-        }
-    );
+    // debug area
+    // glm::vec3 playerPos = player->transform.GetGlobalPosition();
+    // uiTexts.push_back(
+    //     {
+    //         "X : " + std::to_string(playerPos.x) + " Y : " + std::to_string(playerPos.y) + " Z : " + std::to_string(playerPos.z),
+    //         20.0f, 45.0f,
+    //         0.7f,
+    //         glm::vec3(1.0f, 1.0f, 1.0f)
+    //     }
+    // );
+    // uiTexts.push_back(
+    //     {
+    //         "fov : " + std::to_string(MainCamera->fov),
+    //         20.0f, 70.0f,
+    //         0.7f,
+    //         glm::vec3(1.0f, 1.0f, 1.0f)
+    //     }
+    // );
+    // uiTexts.push_back(
+    //     {
+    //         "near dis : " + std::to_string(MainCamera->frustum.nearFace.distance),
+    //         20.0f, 95.0f,
+    //         0.7f,
+    //         glm::vec3(1.0f, 1.0f, 1.0f)
+    //     }
+    // );
+    // uiTexts.push_back(
+    //     {
+    //         "far dis : " + std::to_string(MainCamera->frustum.farFace.distance),
+    //         20.0f, 120.0f,
+    //         0.7f,
+    //         glm::vec3(1.0f, 1.0f, 1.0f)
+    //     }
+    // );
+    // uiTexts.push_back(
+    //     {
+    //         "top dis : " + std::to_string(MainCamera->frustum.topFace.distance),
+    //         20.0f, 145.0f,
+    //         0.7f,
+    //         glm::vec3(1.0f, 1.0f, 1.0f)
+    //     }
+    // );
+    // uiTexts.push_back(
+    //     {
+    //         "bottom dis : " + std::to_string(MainCamera->frustum.bottomFace.distance),
+    //         20.0f, 170.0f,
+    //         0.7f,
+    //         glm::vec3(1.0f, 1.0f, 1.0f)
+    //     }
+    // );
+    // uiTexts.push_back(
+    //     {
+    //         "right dis : " + std::to_string(MainCamera->frustum.rightFace.distance),
+    //         20.0f, 195.0f,
+    //         0.7f,
+    //         glm::vec3(1.0f, 1.0f, 1.0f)
+    //     }
+    // );
+    // uiTexts.push_back(
+    //     {
+    //         "left dis : " + std::to_string(MainCamera->frustum.leftFace.distance),
+    //         20.0f, 220.0f,
+    //         0.7f,
+    //         glm::vec3(1.0f, 1.0f, 1.0f)
+    //     }
+    // );
 
     if(sceneState == SceneState::End)
     {
